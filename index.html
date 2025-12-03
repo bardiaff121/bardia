@@ -21,38 +21,197 @@
         .message-bubble { max-width: 85%; box-shadow: 0 1px 2px rgba(0,0,0,0.1); word-wrap: break-word; }
         .app-h { height: 100vh; height: 100dvh; }
         .chat-bg { background-color: #8e9aaf; background-image: url('https://web.telegram.org/img/bg_0.png'); background-size: cover; background-attachment: fixed; }
+        .animate-slide-up { animation: slideUp 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+        .animate-scale-in { animation: scaleIn 0.3s ease-out; }
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0.5rem); }
+        .context-menu {
+            position: fixed;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            z-index: 1000;
+            min-width: 180px;
+            overflow: hidden;
+        }
+        .context-menu-item {
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .context-menu-item:hover {
+            background: #f3f4f6;
+        }
+        .context-menu-item.delete {
+            color: #ef4444;
+        }
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #10b981;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 10000;
+            animation: slideInRight 0.3s ease-out;
+            max-width: 300px;
+        }
+        .toast.error { background: #ef4444; }
+        .toast.warning { background: #f59e0b; }
+        .toast.info { background: #3b82f6; }
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 1rem;
+            max-width: 400px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+            animation: scaleIn 0.2s ease-out;
+        }
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to   { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+        @keyframes scaleIn {
+            from { transform: scale(0.9); opacity: 0; }
+            to   { transform: scale(1); opacity: 1; }
+        }
+        .bg-purple-red { 
+            background: linear-gradient(135deg, #8b5cf6 0%, #ef4444 100%);
+            background-size: cover;
+            background-attachment: fixed;
+        }
+        .login-container {
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .login-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        .login-container::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
     </style>
 </head>
 <body class="text-gray-800 app-h overflow-hidden select-none bg-gray-50">
 
-    <!-- 1. AUTH SCREEN (ورود/ثبت نام) -->
-    <div id="auth-screen" class="fixed inset-0 bg-white z-50 hidden flex flex-col items-center justify-center p-6">
-        <div class="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100">
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed top-4 right-4 z-100 space-y-2"></div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmation-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="p-6">
+                <div class="text-center mb-6">
+                    <div id="confirmation-icon" class="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-2xl mx-auto mb-4">
+                        <i class="fas fa-question-circle"></i>
+                    </div>
+                    <h3 id="confirmation-title" class="text-xl font-bold text-gray-800 mb-2">آیا مطمئن هستید؟</h3>
+                    <p id="confirmation-message" class="text-gray-600"></p>
+                </div>
+                <div class="flex gap-3">
+                    <button id="confirmation-cancel" class="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition">لغو</button>
+                    <button id="confirmation-confirm" class="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition">تایید</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 1. LOGIN SCREEN -->
+    <div id="login-screen" class="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center p-4">
+        <div class="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 login-container">
             <div class="bg-blue-600 p-8 text-center relative overflow-hidden">
                 <div class="absolute inset-0 bg-blue-500 opacity-50 blur-xl"></div>
                 <div class="relative z-10">
-                    <div class="w-24 h-24 bg-white rounded-full mx-auto mb-4 flex items-center justify-center text-blue-500 relative group cursor-pointer shadow-lg ring-4 ring-blue-400/30" onclick="document.getElementById('profile-upload').click()">
-                        <img id="auth-preview-img" class="w-full h-full rounded-full object-cover hidden" src="">
-                        <i id="auth-preview-icon" class="fas fa-camera text-3xl"></i>
+                    <div class="w-24 h-24 bg-white rounded-full mx-auto mb-4 flex items-center justify-center text-blue-500 shadow-lg ring-4 ring-blue-400/30">
+                        <i class="fas fa-comments text-3xl"></i>
                     </div>
-                    <h2 class="text-white text-2xl font-bold">خوش آمدید</h2>
-                    <p class="text-blue-100 text-sm mt-2">برای شروع عکس و نام خود را وارد کنید</p>
+                    <h2 class="text-white text-2xl font-bold">پیام‌رسان فارسی</h2>
+                    <p class="text-blue-100 text-sm mt-2">برای ادامه وارد شوید یا ثبت نام کنید</p>
                 </div>
             </div>
             <div class="p-8 space-y-5">
-                <input type="file" id="profile-upload" accept="image/*" class="hidden" onchange="handleImagePreview(this)">
-                <div>
-                    <label class="text-xs font-bold text-gray-500 mr-1 mb-1 block">نام نمایشی</label>
-                    <input type="text" id="auth-name" class="w-full p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none bg-gray-50 transition" placeholder="مثلا: علی">
-                </div>
-                <div>
-                    <label class="text-xs font-bold text-gray-500 mr-1 mb-1 block">آیدی کاربری (انگلیسی)</label>
-                    <div class="relative" dir="ltr">
-                        <span class="absolute left-3 top-3.5 text-gray-400">@</span>
-                        <input type="text" id="auth-username" class="w-full pl-8 p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none bg-gray-50 transition text-left" placeholder="username">
+                <div id="login-tab" class="space-y-5">
+                    <div>
+                        <label class="text-xs font-bold text-gray-500 mr-1 mb-1 block">آیدی کاربری</label>
+                        <div class="relative" dir="ltr">
+                            <span class="absolute left-3 top-3.5 text-gray-400">@</span>
+                            <input type="text" id="login-username" class="w-full pl-8 p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none bg-gray-50 transition text-left" placeholder="username" onfocus="this.style.boxShadow='0 0 0 3px rgba(59, 130, 246, 0.1)'" onblur="this.style.boxShadow='none'">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-gray-500 mr-1 mb-1 block">رمز عبور</label>
+                        <input type="password" id="login-password" class="w-full p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none bg-gray-50 transition" placeholder="••••••••" onfocus="this.style.boxShadow='0 0 0 3px rgba(59, 130, 246, 0.1)'" onblur="this.style.boxShadow='none'">
+                    </div>
+                    <button onclick="loginUser()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-200 transition active:scale-95 flex items-center justify-center gap-2">
+                        <span>ورود به حساب</span>
+                        <i class="fas fa-sign-in-alt"></i>
+                    </button>
+                    <div class="text-center">
+                        <button onclick="switchToSignup()" class="text-blue-600 text-sm hover:text-blue-800 transition flex items-center justify-center gap-1 mx-auto">
+                            <span>حساب کاربری ندارید؟ ثبت نام کنید</span>
+                            <i class="fas fa-user-plus text-xs"></i>
+                        </button>
                     </div>
                 </div>
-                <button onclick="completeSignup()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-200 transition active:scale-95">شروع گفتگو</button>
+                
+                <div id="signup-tab" class="space-y-5 hidden">
+                    <div>
+                        <label class="text-xs font-bold text-gray-500 mr-1 mb-1 block">نام نمایشی</label>
+                        <input type="text" id="signup-name" class="w-full p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none bg-gray-50 transition" placeholder="مثلا: علی" onfocus="this.style.boxShadow='0 0 0 3px rgba(59, 130, 246, 0.1)'" onblur="this.style.boxShadow='none'">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-gray-500 mr-1 mb-1 block">آیدی کاربری (انگلیسی)</label>
+                        <div class="relative" dir="ltr">
+                            <span class="absolute left-3 top-3.5 text-gray-400">@</span>
+                            <input type="text" id="signup-username" class="w-full pl-8 p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none bg-gray-50 transition text-left" placeholder="username" onfocus="this.style.boxShadow='0 0 0 3px rgba(59, 130, 246, 0.1)'" onblur="this.style.boxShadow='none'">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-gray-500 mr-1 mb-1 block">رمز عبور (حداقل ۶ کاراکتر)</label>
+                        <input type="password" id="signup-password" class="w-full p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none bg-gray-50 transition" placeholder="••••••••" onfocus="this.style.boxShadow='0 0 0 3px rgba(59, 130, 246, 0.1)'" onblur="this.style.boxShadow='none'">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-gray-500 mr-1 mb-1 block">تکرار رمز عبور</label>
+                        <input type="password" id="signup-password-confirm" class="w-full p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none bg-gray-50 transition" placeholder="••••••••" onfocus="this.style.boxShadow='0 0 0 3px rgba(59, 130, 246, 0.1)'" onblur="this.style.boxShadow='none'">
+                    </div>
+                    <button onclick="signupUser()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-green-200 transition active:scale-95 flex items-center justify-center gap-2">
+                        <span>ثبت نام و شروع</span>
+                        <i class="fas fa-user-check"></i>
+                    </button>
+                    <div class="text-center">
+                        <button onclick="switchToLogin()" class="text-blue-600 text-sm hover:text-blue-800 transition flex items-center justify-center gap-1 mx-auto">
+                            <span>قبلا ثبت نام کرده‌اید؟ وارد شوید</span>
+                            <i class="fas fa-sign-in-alt text-xs"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -60,7 +219,7 @@
     <!-- 2. MAIN APP -->
     <div id="main-app" class="hidden w-full h-full flex relative bg-white">
         
-        <!-- Sidebar (لیست چت‌ها) -->
+        <!-- Sidebar -->
         <div id="sidebar" class="w-full md:w-1/3 lg:w-1/4 h-full border-l border-gray-200 flex flex-col bg-white z-10">
             <!-- Header -->
             <div class="p-3 px-4 bg-white flex justify-between items-center sticky top-0 z-20">
@@ -68,23 +227,28 @@
                     <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center"><i class="fas fa-paper-plane"></i></div>
                     <div class="text-gray-800 font-bold text-lg">پیام‌رسان</div>
                 </div>
-                <button onclick="openSettings()" class="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-600 transition">
-                    <i class="fas fa-bars text-xl"></i>
-                </button>
+                <div class="flex items-center gap-2">
+                    <button onclick="handleSearchClick()" class="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-600 transition">
+                        <i class="fas fa-search text-lg"></i>
+                    </button>
+                    <button onclick="openMainMenu()" class="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-600 transition">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                </div>
             </div>
 
-            <!-- Search -->
-            <div class="px-4 pb-3">
+            <!-- Search Bar -->
+            <div id="search-bar" class="hidden px-4 pb-3">
                 <div class="relative bg-gray-100 rounded-2xl overflow-hidden group focus-within:ring-2 focus-within:ring-blue-100 transition">
                     <i class="fas fa-search absolute right-4 top-3 text-gray-400 text-sm"></i>
-                    <input type="text" id="search-input" onkeyup="handleSearch()" placeholder="جستجو در کاربران..." class="w-full bg-transparent py-2.5 pr-10 pl-4 text-sm focus:outline-none text-gray-700">
+                    <input type="text" id="search-input" onkeyup="handleSearch()" placeholder="جستجو در کاربران و گروه‌ها..." class="w-full bg-transparent py-2.5 pr-10 pl-4 text-sm focus:outline-none text-gray-700">
                 </div>
             </div>
 
             <!-- List -->
             <div id="chat-list" class="flex-1 overflow-y-auto pb-20 space-y-1">
                 <!-- Pinned Group -->
-                <div onclick="openChat('global_public_group', 'گروه عمومی', '', true)" class="flex items-center p-3 mx-2 rounded-xl hover:bg-gray-50 cursor-pointer transition group">
+                <div onclick="openChat('global_public_group', 'گروه عمومی', '', true)" class="flex items-center p-3 mx-2 rounded-xl hover:bg-gray-50 cursor-pointer transition group" ontouchstart="startLongPressTimer(this, 'global_public_group', true)" ontouchend="clearLongPressTimer()">
                     <div class="w-14 h-14 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-2xl shadow-sm shrink-0 group-hover:scale-105 transition">
                         <i class="fas fa-users"></i>
                     </div>
@@ -101,13 +265,12 @@
                 
                 <!-- Recent Chats Container -->
                 <div id="recent-chats-list" class="mt-1">
-                    <!-- Chats will be injected here -->
                     <div class="text-center text-xs text-gray-400 mt-10">در حال بارگذاری گفتگوها...</div>
                 </div>
             </div>
         </div>
 
-        <!-- Chat Area (صفحه چت) -->
+        <!-- Chat Area -->
         <div id="chat-area" class="fixed inset-0 md:static w-full md:w-2/3 lg:w-3/4 h-full chat-bg flex flex-col transform translate-x-full md:translate-x-0 transition-transform duration-300 z-30">
             
             <!-- Default Empty State -->
@@ -124,7 +287,7 @@
             <div id="active-chat-interface" class="flex flex-col h-full hidden relative">
                 
                 <!-- Chat Header -->
-                <div class="bg-white/95 backdrop-blur-md p-2 px-4 flex items-center shadow-sm z-20 cursor-pointer border-b border-gray-100" onclick="handleHeaderClick()">
+                <div class="bg-white/95 backdrop-blur-md p-2 px-4 flex items-center shadow-sm z-20 border-b border-gray-100">
                     <button onclick="closeChat()" class="md:hidden ml-2 text-gray-500 hover:bg-gray-100 p-2 rounded-full w-10 h-10 flex items-center justify-center transition"><i class="fas fa-arrow-right"></i></button>
                     
                     <div class="flex items-center flex-1 min-w-0">
@@ -137,13 +300,38 @@
                             <p id="chat-header-status" class="text-[11px] text-blue-500 truncate">...</p>
                         </div>
                     </div>
+                    <!-- دکمه اعضای گروه برای گروه عمومی -->
+                    <div id="chat-header-buttons">
+                        <button onclick="showChatInfo()" class="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-600 transition">
+                            <i class="fas fa-info-circle"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Messages -->
                 <div id="messages-container" class="flex-1 overflow-y-auto p-4 space-y-2 relative"></div>
 
-                <!-- Input -->
+                <!-- Input Area -->
                 <div class="bg-white/95 backdrop-blur p-2 md:p-3 pb-safe">
+                    <div class="flex items-center gap-2 mb-2">
+                        <button onclick="toggleAttachmentMenu()" class="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-600 transition">
+                            <i class="fas fa-paperclip text-xl"></i>
+                        </button>
+                        <div id="attachment-menu" class="hidden bg-white rounded-xl shadow-lg p-2 absolute bottom-20 right-4 w-48 z-40">
+                            <div onclick="openImagePicker()" class="p-3 hover:bg-gray-100 rounded-lg cursor-pointer flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                                    <i class="fas fa-image"></i>
+                                </div>
+                                <span>عکس</span>
+                            </div>
+                            <div onclick="openVideoPicker()" class="p-3 hover:bg-gray-100 rounded-lg cursor-pointer flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
+                                    <i class="fas fa-video"></i>
+                                </div>
+                                <span>فیلم</span>
+                            </div>
+                        </div>
+                    </div>
                     <div class="flex items-end bg-gray-100 rounded-2xl p-1 border border-gray-200 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition">
                         <textarea id="message-input" rows="1" class="flex-1 bg-transparent border-none focus:ring-0 resize-none py-3 px-4 max-h-32 text-sm text-gray-800 placeholder-gray-400" placeholder="پیام خود را بنویسید..."></textarea>
                         <button onclick="sendMessage()" class="p-3 mb-0.5 text-blue-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition transform active:scale-90"><i class="fas fa-paper-plane text-xl rtl:rotate-180"></i></button>
@@ -153,48 +341,365 @@
         </div>
     </div>
 
-    <!-- Members Modal (برای لیست اعضا) -->
-    <div id="members-modal" class="fixed inset-0 bg-black bg-opacity-60 z-[60] hidden flex items-center justify-center backdrop-blur-sm p-4 animate-fade-in">
-        <div class="bg-white w-full max-w-sm rounded-2xl h-[70vh] flex flex-col shadow-2xl overflow-hidden animate-slide-up">
-            <div class="bg-white p-4 border-b flex justify-between items-center bg-gray-50">
-                <h3 class="font-bold text-gray-700">اعضای گروه</h3>
-                <button onclick="document.getElementById('members-modal').classList.add('hidden')" class="w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center transition"><i class="fas fa-times"></i></button>
+    <!-- Context Menu -->
+    <div id="context-menu" class="context-menu hidden"></div>
+
+    <!-- Members Modal -->
+    <div id="members-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="p-4 border-b flex justify-between items-center bg-gray-50">
+                <h3 class="font-bold text-gray-700" id="members-modal-title">اعضای گروه</h3>
+                <button onclick="closeMembersModal()" class="w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center transition"><i class="fas fa-times"></i></button>
             </div>
-            <div id="members-list" class="flex-1 overflow-y-auto p-2"></div>
+            <!-- Search Bar for Public Group -->
+            <div id="public-group-search-container" class="hidden px-4 pt-4">
+                <div class="relative bg-gray-100 rounded-2xl overflow-hidden group focus-within:ring-2 focus-within:ring-blue-100 transition">
+                    <i class="fas fa-search absolute right-4 top-3 text-gray-400 text-sm"></i>
+                    <input type="text" id="public-group-search-input" onkeyup="searchPublicGroupMembers()" placeholder="جستجو در کاربران..." class="w-full bg-transparent py-2.5 pr-10 pl-4 text-sm focus:outline-none text-gray-700">
+                </div>
+            </div>
+            <div id="members-list" class="p-4 max-h-96 overflow-y-auto">
+                <div class="text-center text-gray-400 py-10">
+                    <i class="fas fa-spinner fa-spin text-xl mb-3"></i>
+                    <p>در حال بارگذاری اعضا...</p>
+                </div>
+            </div>
+            <div id="add-member-section" class="p-4 border-t hidden">
+                <div class="mb-3">
+                    <label class="text-xs text-gray-500 mb-1 block">افزودن عضو جدید با آیدی</label>
+                    <div class="flex gap-2">
+                        <div class="relative flex-1">
+                            <span class="absolute left-3 top-3 text-gray-400">@</span>
+                            <input type="text" id="add-member-username" class="w-full pl-8 p-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-blue-500 outline-none text-left" placeholder="username" dir="ltr">
+                        </div>
+                        <button onclick="addMemberByUsername()" class="bg-blue-600 text-white px-4 rounded-xl hover:bg-blue-700 transition">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Settings Modal -->
-    <div id="settings-modal" class="fixed inset-0 bg-black bg-opacity-60 z-[60] hidden flex items-center justify-center backdrop-blur-sm p-4">
-        <div class="bg-white w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl animate-scale-in">
-            <div class="bg-white p-4 border-b flex justify-between items-center">
-                <h3 class="font-bold">تنظیمات پروفایل</h3>
-                <button onclick="document.getElementById('settings-modal').classList.add('hidden')" class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center"><i class="fas fa-times"></i></button>
+    <!-- Chat Info Modal -->
+    <div id="chat-info-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="p-4 border-b flex justify-between items-center bg-gray-50">
+                <h3 class="font-bold">اطلاعات گفتگو</h3>
+                <button onclick="closeChatInfo()" class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center"><i class="fas fa-times"></i></button>
             </div>
-            <div class="p-6 flex flex-col items-center">
-                <div class="w-28 h-28 rounded-full bg-gray-200 mb-6 relative overflow-hidden group cursor-pointer shadow-lg" onclick="document.getElementById('set-upload').click()">
-                    <img id="set-avatar" src="" class="w-full h-full object-cover">
-                    <div class="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition duration-300"><i class="fas fa-camera text-2xl"></i></div>
-                </div>
-                <input type="file" id="set-upload" class="hidden" onchange="handleSetImage(this)">
-                
-                <div class="w-full mb-4">
-                    <label class="text-xs text-gray-500 mr-2 mb-1 block">نام نمایشی</label>
-                    <input id="set-name" class="w-full p-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-blue-500 outline-none text-center font-bold">
+            <div class="p-6 space-y-4">
+                <div class="text-center">
+                    <div id="chat-info-avatar" class="w-20 h-20 rounded-full bg-blue-100 mx-auto mb-3 flex items-center justify-center text-3xl text-blue-600 overflow-hidden">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h3 id="chat-info-title" class="font-bold text-lg"></h3>
+                    <p id="chat-info-type" class="text-sm text-gray-500"></p>
+                    <p id="chat-info-description" class="text-sm text-gray-600 mt-2"></p>
                 </div>
                 
-                <button onclick="saveSettings()" class="bg-blue-600 text-white w-full py-3 rounded-xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 transition active:scale-95">ذخیره تغییرات</button>
+                <!-- بخش بیوگرافی گروه -->
+                <div id="chat-info-bio-section" class="mt-4">
+                    <h4 class="font-bold text-sm mb-2">بیوگرافی گروه</h4>
+                    <div id="chat-info-bio" class="text-sm text-gray-600 bg-gray-50 p-3 rounded-xl"></div>
+                    <div id="chat-info-edit-bio" class="mt-2 hidden">
+                        <textarea id="edit-group-bio" class="w-full p-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-blue-500 outline-none resize-none" rows="2" placeholder="بیوگرافی گروه را ویرایش کنید..."></textarea>
+                        <div class="flex gap-2 mt-2">
+                            <button onclick="saveGroupBio()" class="flex-1 bg-blue-600 text-white py-2 rounded-xl text-sm">ذخیره</button>
+                            <button onclick="cancelEditGroupBio()" class="flex-1 bg-gray-200 text-gray-700 py-2 rounded-xl text-sm">لغو</button>
+                        </div>
+                    </div>
+                    <button id="edit-bio-btn" onclick="editGroupBio()" class="mt-2 text-blue-600 text-sm hidden">
+                        <i class="fas fa-edit ml-1"></i> ویرایش بیوگرافی
+                    </button>
+                </div>
+                
+                <div id="chat-info-actions" class="space-y-2"></div>
             </div>
         </div>
     </div>
+
+    <!-- Main Menu -->
+    <div id="main-menu" class="modal-overlay hidden">
+        <div class="modal-content max-w-sm">
+            <div class="h-1 w-12 bg-gray-300 rounded-full mx-auto mt-3 mb-2"></div>
+
+            <div class="p-6 pb-4 flex items-center gap-4 border-b border-gray-100">
+                <div class="w-16 h-16 rounded-full overflow-hidden ring-4 ring-blue-100 shadow-lg">
+                    <img id="menu-avatar" src="" class="w-full h-full object-cover">
+                </div>
+                <div class="flex-1">
+                    <div id="menu-name" class="font-bold text-lg text-gray-800">نام شما</div>
+                    <div id="menu-username" class="text-sm text-gray-500">@username</div>
+                </div>
+                <button onclick="closeMainMenu()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <div class="py-2">
+                <div onclick="openProfileSettings()" 
+                     class="px-6 py-4 hover:bg-gray-100 cursor-pointer flex items-center gap-4 transition">
+                    <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div>
+                        <div class="font-bold text-gray-800">پروفایل من</div>
+                        <div class="text-xs text-gray-500">تغییر نام، عکس و آیدی</div>
+                    </div>
+                </div>
+
+                <div onclick="openNewGroupModal()" 
+                     class="px-6 py-4 hover:bg-gray-100 cursor-pointer flex items-center gap-4 transition">
+                    <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="font-bold text-gray-800">گروه جدید</div>
+                </div>
+
+                <div onclick="openSavedMessages()" 
+                     class="px-6 py-4 hover:bg-gray-100 cursor-pointer flex items-center gap-4 transition">
+                    <div class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+                        <i class="fas fa-bookmark"></i>
+                    </div>
+                    <div class="font-bold text-gray-800">پیام‌های ذخیره شده</div>
+                </div>
+
+                <div onclick="openAppSettings()" class="px-6 py-4 hover:bg-gray-100 cursor-pointer flex items-center gap-4 transition">
+                    <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600">
+                        <i class="fas fa-cog"></i>
+                    </div>
+                    <div class="font-bold text-gray-800">تنظیمات برنامه</div>
+                </div>
+
+                <div onclick="openChangePassword()" class="px-6 py-4 hover:bg-gray-100 cursor-pointer flex items-center gap-4 transition">
+                    <div class="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-600">
+                        <i class="fas fa-key"></i>
+                    </div>
+                    <div class="font-bold text-gray-800">تغییر رمز عبور</div>
+                </div>
+
+                <div onclick="openInviteModal()" class="px-6 py-4 hover:bg-gray-100 cursor-pointer flex items-center gap-4 transition">
+                    <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
+                        <i class="fas fa-user-plus"></i>
+                    </div>
+                    <div class="font-bold text-gray-800">دعوت دوستان</div>
+                </div>
+
+                <div onclick="showLogoutConfirmation()" class="px-6 py-4 hover:bg-red-50 cursor-pointer flex items-center gap-4 transition border-t border-gray-100 mt-2">
+                    <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-600">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </div>
+                    <div class="font-bold text-red-600">خروج از حساب</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Settings Modal -->
+    <div id="settings-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="p-4 border-b flex justify-between items-center bg-gray-50">
+                <h3 class="font-bold">تنظیمات پروفایل</h3>
+                <button onclick="closeProfileSettings()" class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-6 flex flex-col items-center space-y-4">
+                <div class="w-28 h-28 rounded-full bg-gray-200 mb-2 relative overflow-hidden group cursor-pointer shadow-lg" onclick="document.getElementById('profile-image-upload').click()">
+                    <img id="set-avatar" src="" class="w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition duration-300"><i class="fas fa-camera text-2xl"></i></div>
+                </div>
+                <input type="file" id="profile-image-upload" accept="image/*" class="hidden" onchange="handleSetImage(this)">
+                
+                <div class="w-full">
+                    <label class="text-xs text-gray-500 mb-1 block">نام نمایشی</label>
+                    <input id="set-name" class="w-full p-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-blue-500 outline-none text-center font-bold">
+                </div>
+                
+                <div class="w-full">
+                    <label class="text-xs text-gray-500 mb-1 block">آیدی کاربری</label>
+                    <div class="relative" dir="ltr">
+                        <span class="absolute left-3 top-3 text-gray-400">@</span>
+                        <input id="set-username" class="w-full pl-8 p-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-blue-500 outline-none text-left" placeholder="username">
+                    </div>
+                </div>
+                
+                <!-- بخش بیوگرافی -->
+                <div class="w-full">
+                    <label class="text-xs text-gray-500 mb-1 block">بیوگرافی</label>
+                    <textarea id="set-bio" class="w-full p-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-blue-500 outline-none resize-none" rows="3" placeholder="درباره خودتان بنویسید..."></textarea>
+                </div>
+                
+                <div class="w-full flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                    <div>
+                        <div class="font-bold text-sm">حریم خصوصی</div>
+                        <div class="text-xs text-gray-500">کسی نتواند با آیدی شما را اضافه کند</div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="privacy-toggle" class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                </div>
+                
+                <button onclick="saveSettings()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 transition active:scale-95 flex items-center justify-center gap-2">
+                    <i class="fas fa-save"></i>
+                    <span>ذخیره تغییرات</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invite Friends Modal -->
+    <div id="invite-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="p-4 border-b flex justify-between items-center bg-gray-50">
+                <h3 class="font-bold">دعوت دوستان</h3>
+                <button onclick="closeInviteModal()" class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-2xl mx-auto mb-4">
+                        <i class="fas fa-user-plus"></i>
+                    </div>
+                    <p class="text-gray-600">دوستان خود را به پیام‌رسان فارسی دعوت کنید</p>
+                </div>
+                <div class="bg-gray-100 rounded-xl p-3">
+                    <div class="text-xs text-gray-500 mb-1">لینک دعوت:</div>
+                    <div id="invite-link" class="font-mono text-sm bg-white p-2 rounded border break-all">https://bardiaff121.github.io/bardia/</div>
+                </div>
+                <button onclick="copyInviteLink()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-200 transition active:scale-95 flex items-center justify-center gap-2">
+                    <i class="fas fa-copy"></i>
+                    <span>کپی لینک</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div id="change-password-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="p-4 border-b flex justify-between items-center bg-gray-50">
+                <h3 class="font-bold">تغییر رمز عبور</h3>
+                <button onclick="closeChangePassword()" class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="text-xs text-gray-500 mb-1 block">رمز عبور فعلی</label>
+                    <input type="password" id="current-password" class="w-full p-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-blue-500 outline-none" placeholder="••••••••">
+                </div>
+                <div>
+                    <label class="text-xs text-gray-500 mb-1 block">رمز عبور جدید</label>
+                    <input type="password" id="new-password" class="w-full p-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-blue-500 outline-none" placeholder="حداقل ۶ کاراکتر">
+                </div>
+                <div>
+                    <label class="text-xs text-gray-500 mb-1 block">تکرار رمز عبور جدید</label>
+                    <input type="password" id="confirm-password" class="w-full p-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-blue-500 outline-none" placeholder="••••••••">
+                </div>
+                <button onclick="changePassword()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-200 transition active:scale-95 flex items-center justify-center gap-2">
+                    <i class="fas fa-key"></i>
+                    <span>تغییر رمز عبور</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- App Settings Modal -->
+    <div id="app-settings-modal" class="modal-overlay hidden">
+        <div class="modal-content max-w-md">
+            <div class="p-4 border-b flex justify-between items-center bg-gray-50 sticky top III">
+                <h3 class="font-bold">تنظیمات برنامه</h3>
+                <button onclick="closeAppSettings()" class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-6 space-y-6">
+                <!-- فقط دو تم: آبی (پیش‌فرض) و بنفش-قرمز -->
+                <div>
+                    <h4 class="font-bold mb-3">رنگ پس‌زمینه</h4>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div onclick="changeBackground('default')" class="h-20 rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 cursor-pointer border-2 border-blue-500 flex items-center justify-center text-white">
+                            <i class="fas fa-check" id="default-check"></i>
+                            <span class="mr-2">آبی (پیش‌فرض)</span>
+                        </div>
+                        <div onclick="changeBackground('purple-red')" class="h-20 rounded-xl bg-gradient-to-br from-purple-500 to-red-500 cursor-pointer border-2 border-gray-300 flex items-center justify-center text-white">
+                            <i class="fas fa-check hidden" id="purple-red-check"></i>
+                            <span class="mr-2">بنفش-قرمز</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 class="font-bold mb-3">اعلان‌ها</h4>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span>صدای اعلان</span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="notification-sound" class="sr-only peer" checked>
+                                <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span>لرزش</span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="notification-vibrate" class="sr-only peer" checked>
+                                <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="pt-4 border-t">
+                    <h4 class="font-bold mb-2">درباره</h4>
+                    <p class="text-sm text-gray-600">پیام‌رسان فارسی v1.0</p>
+                    <p class="text-xs text-gray-500 mt-2">توسعه داده شده با ❤️ برای کاربران فارسی زبان</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Group Modal -->
+    <div id="new-group-modal" class="modal-overlay hidden">
+        <div class="modal-content max-w-md">
+            <div class="p-4 border-b flex justify-between items-center bg-gray-50 sticky top-0 bg-white z-10">
+                <h3 class="font-bold">ساخت گروه جدید</h3>
+                <button onclick="closeNewGroupModal()" class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="text-xs text-gray-500 mb-1 block">نام گروه</label>
+                    <input id="group-name" class="w-full p-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-blue-500 outline-none" placeholder="مثال: گروه دوستان">
+                </div>
+                <div>
+                    <label class="text-xs text-gray-500 mb-1 block">توضیحات (اختیاری)</label>
+                    <textarea id="group-desc" class="w-full p-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-blue-500 outline-none resize-none" rows="2" placeholder="درباره گروه بنویسید..."></textarea>
+                </div>
+                <div>
+                    <label class="text-xs text-gray-500 mb-1 block">انتخاب اعضا</label>
+                    <div id="selected-members" class="flex flex-wrap gap-2 mb-3"></div>
+                    <div class="relative bg-gray-100 rounded-2xl overflow-hidden group focus-within:ring-2 focus-within:ring-blue-100 transition">
+                        <i class="fas fa-search absolute right-4 top-3 text-gray-400 text-sm"></i>
+                        <input type="text" id="group-member-search" onkeyup="searchMembersForGroup()" placeholder="جستجوی کاربران..." class="w-full bg-transparent py-2.5 pr-10 pl-4 text-sm focus:outline-none text-gray-700">
+                    </div>
+                    <div id="group-member-results" class="mt-3 max-h-48 overflow-y-auto space-y-2">
+                        <div class="text-center text-gray-400 py-4">برای جستجو شروع به تایپ کنید</div>
+                    </div>
+                </div>
+                <button onclick="createNewGroup()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-200 transition active:scale-95 mt-4 flex items-center justify-center gap-2">
+                    <i class="fas fa-users"></i>
+                    <span>ساخت گروه</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Media Picker Modals -->
+    <input type="file" id="image-picker" accept="image/*" class="hidden" onchange="handleImageSend(this)">
+    <input type="file" id="video-picker" accept="video/*" class="hidden" onchange="handleVideoSend(this)">
 
     <!-- Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, getDoc, getDocs, addDoc, query, where, onSnapshot, orderBy, limit, serverTimestamp, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, getDocs, addDoc, query, where, onSnapshot, orderBy, limit, serverTimestamp, updateDoc, deleteDoc, arrayRemove, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
-        // 🔥 CONFIG (اینجا کد Firebase خودت رو قرار بده)
+        // Firebase Config
         const firebaseConfig = {
             apiKey: "AIzaSyAs_HguZ_up86aWIuQohq8nJl57aoE67Vo",
             authDomain: "hichat-597f0.firebaseapp.com",
@@ -205,92 +710,295 @@
             measurementId: "G-BJRG0Y9TPY"
         };
         const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
         const db = getFirestore(app);
+        const storage = getStorage(app);
 
         // State
-        let currentUser = null, userData = null, currentChatId = null;
+        let currentUser = null, userData = null, currentChatId = null, currentChatData = null;
         let unsubscribeMsg = null, unsubscribeChats = null, tempImg = null, isGroup = false;
+        let selectedGroupMembers = [];
+        let longPressTimer = null;
+        let currentBackground = localStorage.getItem('chat_background') || 'default';
 
-        // 🔧 SIMPLE PATH (بدون artifacts)
+        // Helper functions
         const pubCol = (n) => collection(db, n);
         const pubDoc = (n, id) => doc(db, n, id);
 
-        // --- 1. AUTH LOGIC ---
-        const initAuth = async () => {
-            try {
-                await signInAnonymously(auth);
-            } catch (e) {
-                console.error("Auth Fail", e);
-                showAuthScreen();
-            }
-        };
-        initAuth();
-
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                currentUser = user;
-                try {
-                    const snap = await getDoc(pubDoc('users', user.uid));
-                    if (snap.exists()) {
-                        userData = snap.data();
-                        showMainApp();
-                    } else {
-                        showAuthScreen();
-                    }
-                } catch (e) { showAuthScreen(); }
-            }
-        });
-
-        function showAuthScreen() {
-            document.getElementById('auth-screen').classList.remove('hidden');
-            document.getElementById('auth-screen').classList.add('flex');
-            document.getElementById('main-app').classList.add('hidden');
-        }
-
-        function showMainApp() {
-            document.getElementById('auth-screen').classList.add('hidden');
-            document.getElementById('auth-screen').classList.remove('flex');
-            document.getElementById('main-app').classList.remove('hidden');
-            document.getElementById('set-name').value = userData.name;
-            document.getElementById('set-avatar').src = userData.photoURL;
-            loadRecentChats();
-        }
-
-        // --- 2. SIGNUP ---
-        window.handleImagePreview = (input) => processImage(input, (res) => {
-            tempImg = res;
-            document.getElementById('auth-preview-img').src = res;
-            document.getElementById('auth-preview-img').classList.remove('hidden');
-            document.getElementById('auth-preview-icon').classList.add('hidden');
-        });
-
-        window.completeSignup = async () => {
-            const name = document.getElementById('auth-name').value.trim();
-            const username = document.getElementById('auth-username').value.trim().toLowerCase();
-            if(!name || !username) return alert('لطفا نام و آیدی را وارد کنید');
+        // --- UTILITY FUNCTIONS ---
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+                    <span>${message}</span>
+                </div>
+            `;
             
-            const btn = document.querySelector('#auth-screen button');
-            const oldText = btn.innerText;
-            btn.innerText = 'درحال ساخت حساب...';
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'slideInRight 0.3s ease-out reverse';
+                setTimeout(() => {
+                    container.removeChild(toast);
+                }, 300);
+            }, 3000);
+        }
+
+        function showConfirmation(title, message, onConfirm, icon = 'question-circle', confirmText = 'تایید', confirmColor = 'red') {
+            const modal = document.getElementById('confirmation-modal');
+            const iconEl = document.getElementById('confirmation-icon');
+            const titleEl = document.getElementById('confirmation-title');
+            const messageEl = document.getElementById('confirmation-message');
+            const confirmBtn = document.getElementById('confirmation-confirm');
+            const cancelBtn = document.getElementById('confirmation-cancel');
+            
+            // Set icon
+            iconEl.className = `w-16 h-16 rounded-full ${confirmColor === 'red' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'} flex items-center justify-center text-2xl mx-auto mb-4`;
+            iconEl.innerHTML = `<i class="fas fa-${icon}"></i>`;
+            
+            // Set content
+            titleEl.textContent = title;
+            messageEl.textContent = message;
+            confirmBtn.textContent = confirmText;
+            confirmBtn.className = `flex-1 py-3 bg-${confirmColor}-600 text-white rounded-xl font-bold hover:bg-${confirmColor}-700 transition`;
+            
+            // Clear previous listeners
+            const newConfirmBtn = confirmBtn.cloneNode(true);
+            const newCancelBtn = cancelBtn.cloneNode(true);
+            confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+            cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+            
+            // Add new listeners
+            newConfirmBtn.onclick = () => {
+                modal.classList.add('hidden');
+                onConfirm();
+            };
+            
+            newCancelBtn.onclick = () => {
+                modal.classList.add('hidden');
+            };
+            
+            modal.classList.remove('hidden');
+        }
+
+        function applyBackground() {
+            document.body.classList.remove('chat-bg', 'bg-purple-red');
+            document.body.style.background = '';
+            document.body.style.backgroundImage = '';
+            
+            if(currentBackground === 'default') {
+                document.body.classList.add('chat-bg');
+            } else if (currentBackground === 'purple-red') {
+                document.body.classList.add('bg-purple-red');
+                document.body.style.backgroundSize = 'cover';
+                document.body.style.backgroundAttachment = 'fixed';
+            }
+            
+            // Update checkmarks
+            document.getElementById('default-check').classList.toggle('hidden', currentBackground !== 'default');
+            document.getElementById('purple-red-check').classList.toggle('hidden', currentBackground !== 'purple-red');
+        }
+
+        // --- 1. INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            applyBackground();
+            
+            // Check if user is already logged in
+            const savedUser = localStorage.getItem('currentUser');
+            if(savedUser) {
+                try {
+                    const user = JSON.parse(savedUser);
+                    autoLogin(user.uid, user.username);
+                } catch(e) {
+                    console.error("Auto-login failed:", e);
+                }
+            }
+        });
+
+        async function autoLogin(uid, username) {
+            try {
+                const userSnap = await getDoc(pubDoc('users', uid));
+                if(userSnap.exists()) {
+                    const user = userSnap.data();
+                    if(user.username === username) {
+                        userData = user;
+                        currentUser = { uid: uid };
+                        showMainApp();
+                        return;
+                    }
+                }
+            } catch(e) {
+                console.error("Auto-login error:", e);
+            }
+            localStorage.removeItem('currentUser');
+        }
+
+        // --- 2. LOGIN/SIGNUP SYSTEM ---
+        window.switchToSignup = () => {
+            document.getElementById('login-tab').classList.add('hidden');
+            document.getElementById('signup-tab').classList.remove('hidden');
+        };
+
+        window.switchToLogin = () => {
+            document.getElementById('signup-tab').classList.add('hidden');
+            document.getElementById('login-tab').classList.remove('hidden');
+        };
+
+        window.loginUser = async () => {
+            const username = document.getElementById('login-username').value.trim().toLowerCase();
+            const password = document.getElementById('login-password').value;
+            
+            if(!username || !password) {
+                showToast('لطفا اطلاعات را کامل وارد کنید', 'error');
+                return;
+            }
+            
+            const btn = document.querySelector('#login-tab button');
+            const oldText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>در حال ورود...</span>';
             btn.disabled = true;
             
             try {
-                // Check Username
+                // Find user by username
                 const q = query(pubCol('users'), where('username', '==', username));
                 const snap = await getDocs(q);
-                if (!snap.empty && snap.docs[0].id !== currentUser.uid) throw new Error('این آیدی قبلا گرفته شده است');
-
-                const photoURL = tempImg || `https://ui-avatars.com/api/?name=${name}&background=3b82f6&color=fff`;
-                const newUser = { uid: currentUser.uid, name, username, photoURL, createdAt: serverTimestamp(), bio: 'کاربر آنلاین' };
                 
-                await setDoc(pubDoc('users', currentUser.uid), newUser);
-                userData = newUser;
+                if(snap.empty) {
+                    throw new Error('کاربری با این آیدی یافت نشد');
+                }
+                
+                const userDoc = snap.docs[0];
+                const user = userDoc.data();
+                
+                // Simple password check
+                if(user.password !== password) {
+                    throw new Error('رمز عبور اشتباه است');
+                }
+                
+                // Success
+                userData = user;
+                currentUser = { uid: user.uid };
+                
+                // Save to localStorage for auto-login
+                localStorage.setItem('currentUser', JSON.stringify({
+                    uid: user.uid,
+                    username: user.username
+                }));
+                
                 showMainApp();
-            } catch (e) { alert(e.message); btn.innerText = oldText; btn.disabled = false; }
+                showToast('با موفقیت وارد شدید', 'success');
+                
+            } catch(e) {
+                showToast(e.message, 'error');
+                btn.innerHTML = oldText;
+                btn.disabled = false;
+            }
         };
 
-        // --- 3. RECENT CHATS (Sidebar) ---
+        window.signupUser = async () => {
+            const name = document.getElementById('signup-name').value.trim();
+            const username = document.getElementById('signup-username').value.trim().toLowerCase();
+            const password = document.getElementById('signup-password').value;
+            const confirmPassword = document.getElementById('signup-password-confirm').value;
+            
+            if(!name || !username || !password) {
+                showToast('لطفا تمام فیلدها را پر کنید', 'error');
+                return;
+            }
+            
+            if(password.length < 6) {
+                showToast('رمز عبور باید حداقل ۶ کاراکتر باشد', 'error');
+                return;
+            }
+            
+            if(password !== confirmPassword) {
+                showToast('رمز عبور و تکرار آن مطابقت ندارند', 'error');
+                return;
+            }
+            
+            const btn = document.querySelector('#signup-tab button');
+            const oldText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>در حال ثبت نام...</span>';
+            btn.disabled = true;
+            
+            try {
+                // Check if username is taken
+                const q = query(pubCol('users'), where('username', '==', username));
+                const snap = await getDocs(q);
+                
+                if(!snap.empty) {
+                    throw new Error('این آیدی قبلا گرفته شده است');
+                }
+                
+                // Generate user ID
+                const userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                
+                // Create user data
+                const newUser = {
+                    uid: userId,
+                    name,
+                    username,
+                    password,
+                    photoURL: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=3b82f6&color=fff`,
+                    createdAt: serverTimestamp(),
+                    bio: 'کاربر پیام‌رسان فارسی',
+                    privacy: false
+                };
+                
+                // Save to Firestore
+                await setDoc(pubDoc('users', userId), newUser);
+                
+                // Set current user
+                userData = newUser;
+                currentUser = { uid: userId };
+                
+                // Save to localStorage for auto-login
+                localStorage.setItem('currentUser', JSON.stringify({
+                    uid: userId,
+                    username: username
+                }));
+                
+                // Create saved messages chat
+                await ensureSavedMessagesChat();
+                
+                showMainApp();
+                showToast('حساب شما با موفقیت ایجاد شد', 'success');
+                
+            } catch(e) {
+                showToast(e.message, 'error');
+                btn.innerHTML = oldText;
+                btn.disabled = false;
+            }
+        };
+
+        async function ensureSavedMessagesChat() {
+            const savedChatId = `saved_${currentUser.uid}`;
+            const chatRef = pubDoc('chats', savedChatId);
+            const chatSnap = await getDoc(chatRef);
+            
+            if (!chatSnap.exists()) {
+                await setDoc(chatRef, {
+                    title: 'پیام‌های ذخیره شده',
+                    participantIds: [currentUser.uid],
+                    participantsData: {
+                        [currentUser.uid]: { name: userData.name, photo: userData.photoURL }
+                    },
+                    type: 'saved',
+                    createdAt: serverTimestamp(),
+                    lastMessage: 'پیام‌های ذخیره شده شما'
+                });
+            }
+        }
+
+        function showMainApp() {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('main-app').classList.remove('hidden');
+            loadRecentChats();
+        }
+
+        // --- 3. RECENT CHATS ---
         function loadRecentChats() {
             if(unsubscribeChats) unsubscribeChats();
             const list = document.getElementById('recent-chats-list');
@@ -301,7 +1009,7 @@
                 const chats = [];
                 snap.forEach(d => chats.push({id: d.id, ...d.data()}));
                 
-                // Sort by lastMessageTime descending (Newest first)
+                // Sort by lastMessageTime descending
                 chats.sort((a, b) => {
                     const ta = a.lastMessageTime?.seconds || 0;
                     const tb = b.lastMessageTime?.seconds || 0;
@@ -314,19 +1022,18 @@
                 }
 
                 chats.forEach(chat => {
-                    // Determine Other User Name/Photo
-                    let title = "گروه";
-                    let img = "";
+                    if(chat.type === 'saved') return;
+                    
+                    let title = chat.title || "گروه";
+                    let img = chat.photo || "";
                     let isPV = chat.type === 'private';
+                    let isPinned = chat.pinnedBy && chat.pinnedBy.includes(currentUser.uid);
                     
                     if (isPV) {
                         const otherId = chat.participantIds.find(id => id !== currentUser.uid) || currentUser.uid;
                         const otherData = chat.participantsData?.[otherId] || {name: 'کاربر', photo: ''};
                         title = otherData.name;
                         img = otherData.photo || `https://ui-avatars.com/api/?name=${title}&background=random`;
-                    } else {
-                        title = chat.title || "گروه";
-                        img = chat.photo || ""; 
                     }
 
                     // Time Formatting
@@ -336,13 +1043,20 @@
                     }
 
                     const div = document.createElement('div');
-                    div.className = 'flex items-center p-3 mx-2 rounded-xl hover:bg-gray-50 cursor-pointer transition group relative';
+                    div.className = `flex items-center p-3 mx-2 rounded-xl hover:bg-gray-50 cursor-pointer transition group relative ${isPinned ? 'bg-yellow-50 border-r-4 border-yellow-400' : ''}`;
                     div.onclick = () => openChat(chat.id, title, img, !isPV);
+                    div.ontouchstart = (e) => startLongPressTimer(div, chat.id, !isPV, chat);
+                    div.ontouchend = clearLongPressTimer;
+                    div.oncontextmenu = (e) => {
+                        e.preventDefault();
+                        showChatContextMenu(e, chat.id, !isPV, chat);
+                    };
                     
                     div.innerHTML = `
                         <div class="relative">
                              <img src="${img}" class="w-14 h-14 rounded-full object-cover shadow-sm bg-gray-200">
                              ${!isPV ? '<div class="absolute -bottom-1 -right-1 bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] border-2 border-white"><i class="fas fa-users"></i></div>' : ''}
+                             ${isPinned ? '<div class="absolute -top-1 -left-1 bg-yellow-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"><i class="fas fa-thumbtack"></i></div>' : ''}
                         </div>
                         <div class="mr-3 flex-1 overflow-hidden min-w-0">
                             <div class="flex justify-between items-center mb-1">
@@ -360,24 +1074,250 @@
             });
         }
 
-        // --- 4. CHAT AREA ---
-        window.openChat = (chatId, title, img, group) => {
+        // --- 4. CHAT CONTEXT MENU ---
+        let longPressData = null;
+        
+        function startLongPressTimer(element, chatId, isGroup, chatData) {
+            longPressData = { element, chatId, isGroup, chatData };
+            longPressTimer = setTimeout(() => {
+                showChatContextMenu({ target: element }, chatId, isGroup, chatData);
+            }, 800);
+        }
+        
+        function clearLongPressTimer() {
+            if(longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+            }
+        }
+        
+        function showChatContextMenu(e, chatId, isGroup, chatData) {
+            e.preventDefault();
+            const menu = document.getElementById('context-menu');
+            menu.innerHTML = '';
+            
+            const rect = e.target.getBoundingClientRect();
+            menu.style.left = Math.min(window.innerWidth - 200, rect.left) + 'px';
+            menu.style.top = rect.top + 'px';
+            
+            // Check if chat is pinned
+            const isPinned = chatData.pinnedBy && chatData.pinnedBy.includes(currentUser.uid);
+            
+            // Pin/Unpin option
+            const pinOption = document.createElement('div');
+            pinOption.className = 'context-menu-item';
+            pinOption.innerHTML = `<i class="fas fa-thumbtack ${isPinned ? 'text-yellow-500' : ''}"></i><span>${isPinned ? 'لغو پین' : 'پین کردن'}</span>`;
+            pinOption.onclick = async () => {
+                await togglePinChat(chatId, isPinned);
+                menu.classList.add('hidden');
+            };
+            menu.appendChild(pinOption);
+            
+            // Delete option
+            const deleteOption = document.createElement('div');
+            deleteOption.className = 'context-menu-item delete';
+            deleteOption.innerHTML = '<i class="fas fa-trash"></i><span>حذف گفتگو</span>';
+            deleteOption.onclick = async () => {
+                showConfirmation(
+                    'حذف گفتگو',
+                    'آیا مطمئن هستید؟ تمام پیام‌ها حذف خواهند شد.',
+                    () => deleteChat(chatId),
+                    'trash-alt'
+                );
+                menu.classList.add('hidden');
+            };
+            menu.appendChild(deleteOption);
+            
+            // Leave group option (if group and not admin)
+            if(isGroup && chatData.createdBy !== currentUser.uid) {
+                const leaveOption = document.createElement('div');
+                leaveOption.className = 'context-menu-item';
+                leaveOption.innerHTML = '<i class="fas fa-sign-out-alt"></i><span>ترک گروه</span>';
+                leaveOption.onclick = async () => {
+                    showConfirmation(
+                        'ترک گروه',
+                        'آیا می‌خواهید گروه را ترک کنید؟',
+                        () => leaveGroup(chatId),
+                        'sign-out-alt',
+                        'ترک گروه',
+                        'red'
+                    );
+                    menu.classList.add('hidden');
+                };
+                menu.appendChild(leaveOption);
+            }
+            
+            menu.classList.remove('hidden');
+            
+            // Close menu when clicking outside
+            setTimeout(() => {
+                const closeMenu = (event) => {
+                    if(!menu.contains(event.target)) {
+                        menu.classList.add('hidden');
+                        document.removeEventListener('click', closeMenu);
+                    }
+                };
+                document.addEventListener('click', closeMenu);
+            }, 100);
+        }
+        
+        async function togglePinChat(chatId, isPinned) {
+            try {
+                const chatRef = pubDoc('chats', chatId);
+                if(isPinned) {
+                    await updateDoc(chatRef, {
+                        pinnedBy: arrayRemove(currentUser.uid)
+                    });
+                    showToast('پین برداشته شد', 'success');
+                } else {
+                    await updateDoc(chatRef, {
+                        pinnedBy: arrayUnion(currentUser.uid)
+                    });
+                    showToast('گفتگو پین شد', 'success');
+                }
+                loadRecentChats();
+            } catch(e) {
+                console.error("Error pinning chat:", e);
+                showToast('خطا در انجام عملیات', 'error');
+            }
+        }
+        
+        async function deleteChat(chatId) {
+            try {
+                // Delete all messages in chat
+                const messagesQuery = query(pubCol('messages'), where('chatId', '==', chatId));
+                const messagesSnap = await getDocs(messagesQuery);
+                const deletePromises = messagesSnap.docs.map(doc => deleteDoc(doc.ref));
+                await Promise.all(deletePromises);
+                
+                // Remove user from chat participants
+                const chatRef = pubDoc('chats', chatId);
+                const chatSnap = await getDoc(chatRef);
+                if(chatSnap.exists()) {
+                    const chatData = chatSnap.data();
+                    if(chatData.type === 'group' && chatData.createdBy === currentUser.uid) {
+                        // If user is creator, delete the whole group
+                        await deleteDoc(chatRef);
+                    } else {
+                        // Otherwise just remove user from participants
+                        const newParticipants = chatData.participantIds.filter(id => id !== currentUser.uid);
+                        if(newParticipants.length > 0) {
+                            await updateDoc(chatRef, {
+                                participantIds: newParticipants
+                            });
+                        } else {
+                            await deleteDoc(chatRef);
+                        }
+                    }
+                }
+                
+                // Close chat if open
+                if(currentChatId === chatId) {
+                    closeChat();
+                }
+                
+                loadRecentChats();
+                showToast('گفتگو حذف شد', 'success');
+            } catch(e) {
+                console.error("Error deleting chat:", e);
+                showToast('خطا در حذف گفتگو', 'error');
+            }
+        }
+        
+        async function leaveGroup(chatId) {
+            try {
+                const chatRef = pubDoc('chats', chatId);
+                const chatSnap = await getDoc(chatRef);
+                
+                if(chatSnap.exists()) {
+                    const chatData = chatSnap.data();
+                    const newParticipants = chatData.participantIds.filter(id => id !== currentUser.uid);
+                    
+                    if(newParticipants.length > 0) {
+                        await updateDoc(chatRef, {
+                            participantIds: newParticipants
+                        });
+                        
+                        // Send leave message
+                        await addDoc(pubCol('messages'), {
+                            text: `${userData.name} گروه را ترک کرد`,
+                            senderId: currentUser.uid,
+                            senderName: userData.name,
+                            senderPhoto: userData.photoURL,
+                            chatId: chatId,
+                            timestamp: serverTimestamp(),
+                            isSystem: true
+                        });
+                    } else {
+                        await deleteDoc(chatRef);
+                    }
+                    
+                    if(currentChatId === chatId) {
+                        closeChat();
+                    }
+                    
+                    loadRecentChats();
+                    showToast('گروه را ترک کردید', 'success');
+                }
+            } catch(e) {
+                console.error("Error leaving group:", e);
+                showToast('خطا در ترک گروه', 'error');
+            }
+        }
+
+        // --- 5. CHAT AREA ---
+        window.openChat = async (chatId, title, img, group) => {
             currentChatId = chatId;
             isGroup = group;
             
+            // Reset currentChatData
+            currentChatData = null;
+            
+            try {
+                const chatSnap = await getDoc(pubDoc('chats', chatId));
+                if(chatSnap.exists()) {
+                    currentChatData = chatSnap.data();
+                }
+            } catch(e) {
+                console.error("Error loading chat data:", e);
+                currentChatData = null;
+            }
+            
             // Header UI
             document.getElementById('chat-header-title').innerText = title;
-            const sEl = document.getElementById('chat-header-status');
-            sEl.innerText = group ? 'برای مشاهده اعضا ضربه بزنید' : 'آنلاین';
+            document.getElementById('chat-header-status').innerText = group ? 'گروه' : 'آنلاین';
+            
+            // Update chat header buttons for public group
+            const chatHeaderButtons = document.getElementById('chat-header-buttons');
+            if(chatId === 'global_public_group') {
+                // برای گروه عمومی فقط دکمه اعضا را نمایش بده
+                chatHeaderButtons.innerHTML = `
+                    <button onclick="openPublicGroupMembers()" class="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-600 transition">
+                        <i class="fas fa-users"></i>
+                    </button>
+                `;
+            } else {
+                // برای بقیه گروه‌ها دکمه اطلاعات گروه را نمایش بده
+                chatHeaderButtons.innerHTML = `
+                    <button onclick="showChatInfo()" class="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-600 transition">
+                        <i class="fas fa-info-circle"></i>
+                    </button>
+                `;
+            }
             
             if(group) {
                 document.getElementById('chat-header-img').classList.add('hidden');
                 document.getElementById('chat-header-icon').classList.remove('hidden');
                 document.getElementById('chat-header-icon').innerHTML = '<i class="fas fa-users"></i>';
             } else {
-                document.getElementById('chat-header-img').src = img;
-                document.getElementById('chat-header-img').classList.remove('hidden');
-                document.getElementById('chat-header-icon').classList.add('hidden');
+                if(img) {
+                    document.getElementById('chat-header-img').src = img;
+                    document.getElementById('chat-header-img').classList.remove('hidden');
+                    document.getElementById('chat-header-icon').classList.add('hidden');
+                } else {
+                    document.getElementById('chat-header-img').classList.add('hidden');
+                    document.getElementById('chat-header-icon').classList.remove('hidden');
+                }
             }
 
             // Slide In
@@ -385,7 +1325,9 @@
             document.getElementById('empty-state').classList.add('hidden');
             document.getElementById('active-chat-interface').classList.remove('hidden');
             document.getElementById('active-chat-interface').classList.add('flex');
-            if(window.innerWidth < 768) document.getElementById('sidebar').classList.add('hidden');
+            if(window.innerWidth < 768) {
+                document.getElementById('sidebar').classList.add('hidden');
+            }
 
             // Load Messages
             if(unsubscribeMsg) unsubscribeMsg();
@@ -397,7 +1339,7 @@
             
             unsubscribeMsg = onSnapshot(q, (snap) => {
                 const msgs = [];
-                snap.forEach(d => msgs.push(d.data()));
+                snap.forEach(d => msgs.push({id: d.id, ...d.data()}));
                 // Sort locally
                 msgs.sort((a,b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0));
 
@@ -415,20 +1357,71 @@
                     lastSenderId = m.senderId;
 
                     const div = document.createElement('div');
-                    div.className = `flex w-full ${me ? 'justify-end' : 'justify-start'} animate-fade-in`;
+                    div.className = `flex w-full ${me ? 'justify-end' : 'justify-start'} animate-fade-in message-container`;
+                    div.dataset.messageId = m.id;
                     
                     const time = m.timestamp ? new Date(m.timestamp.seconds * 1000).toLocaleTimeString('fa-IR', {hour:'2-digit', minute:'2-digit'}) : '...';
+                    
+                    let messageContent = '';
+                    if(m.type === 'image') {
+                        messageContent = `<img src="${m.content}" class="max-w-full rounded-lg mb-1 cursor-pointer max-h-64" onclick="openImagePreview('${m.content}')">`;
+                    } else if(m.type === 'video') {
+                        messageContent = `
+                            <video controls class="max-w-full rounded-lg mb-1 max-h-64">
+                                <source src="${m.content}" type="video/mp4">
+                                مرورگر شما از ویدئو پشتیبانی نمی‌کند
+                            </video>
+                        `;
+                    } else {
+                        messageContent = `<div class="pb-1 leading-6 relative z-10" style="white-space: pre-wrap;">${m.text || m.content}</div>`;
+                    }
 
-                    div.innerHTML = `
-                        <div class="message-bubble relative p-2 px-3 rounded-2xl text-sm mb-1 min-w-[80px] group 
-                        ${me ? 'bg-[#effdde] text-black rounded-br-sm' : 'bg-white text-black rounded-bl-sm'}">
-                            ${!me && group && !sameSender ? `<div class="text-[11px] text-blue-600 font-bold mb-0.5">${m.senderName}</div>` : ''}
-                            <div class="pb-1 leading-6 relative z-10" style="white-space: pre-wrap;">${m.text}</div>
-                            <div class="text-[9px] ${me ? 'text-green-700' : 'text-gray-400'} text-left -mt-1 opacity-70 flex justify-end items-center gap-1">
-                                ${time}
-                                ${me ? '<i class="fas fa-check"></i>' : ''}
-                            </div>
-                        </div>`;
+                    // اگر پیام سیستم نیست
+                    if(!m.isSystem) {
+                        if(!me) {
+                            // پیام از طرف دیگران - نمایش پروفایل و نام
+                            const userPhoto = m.senderPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(m.senderName)}&background=3b82f6&color=fff`;
+                            div.innerHTML = `
+                                <div class="flex items-start gap-2 max-w-[85%]">
+                                    <div class="flex flex-col items-center pt-1">
+                                        <img src="${userPhoto}" 
+                                             class="w-10 h-10 rounded-full cursor-pointer border border-gray-100"
+                                             onclick="openUserProfile('${m.senderId}')"
+                                             onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(m.senderName)}&background=3b82f6&color=fff'">
+                                        <div class="text-[10px] text-gray-500 mt-1 truncate max-w-[60px]">${m.senderName}</div>
+                                    </div>
+                                    <div class="message-bubble relative p-2 px-3 rounded-2xl text-sm mb-1 min-w-[80px] group bg-white text-black rounded-bl-sm"
+                                         ontouchstart="startMessageLongPress(event, '${m.id}', ${me}, '${m.senderId}')"
+                                         oncontextmenu="return showMessageContextMenu(event, '${m.id}', ${me}, '${m.senderId}')">
+                                        ${messageContent}
+                                        <div class="text-[9px] text-gray-400 text-left -mt-1 opacity-70 flex justify-end items-center gap-1">
+                                            ${time}
+                                        </div>
+                                    </div>
+                                </div>`;
+                        } else {
+                            // پیام خود کاربر
+                            div.innerHTML = `
+                                <div class="message-bubble relative p-2 px-3 rounded-2xl text-sm mb-1 min-w-[80px] group 
+                                bg-[#effdde] text-black rounded-br-sm"
+                                ontouchstart="startMessageLongPress(event, '${m.id}', ${me}, '${m.senderId}')"
+                                oncontextmenu="return showMessageContextMenu(event, '${m.id}', ${me}, '${m.senderId}')">
+                                    ${messageContent}
+                                    <div class="text-[9px] text-green-700 text-left -mt-1 opacity-70 flex justify-end items-center gap-1">
+                                        ${time}
+                                        <i class="fas fa-check"></i>
+                                    </div>
+                                </div>`;
+                        }
+                    } else {
+                        // پیام سیستم
+                        div.innerHTML = `
+                            <div class="message-bubble relative p-2 px-3 rounded-2xl text-sm mb-1 min-w-[80px] group 
+                            bg-gray-100 text-gray-600 text-center italic">
+                                ${messageContent}
+                            </div>`;
+                    }
+                    
                     c.appendChild(div);
                 });
                 // Scroll to bottom
@@ -436,13 +1429,194 @@
             });
         };
 
+        // --- 6. نمایش اعضای گروه عمومی ---
+        window.openPublicGroupMembers = async function() {
+            const modal = document.getElementById('members-modal');
+            const list = document.getElementById('members-list');
+            const title = document.getElementById('members-modal-title');
+            const searchContainer = document.getElementById('public-group-search-container');
+            const addSection = document.getElementById('add-member-section');
+            
+            modal.classList.remove('hidden');
+            title.textContent = 'اعضای گروه عمومی';
+            searchContainer.classList.remove('hidden');
+            addSection.classList.add('hidden');
+            
+            try {
+                // Get all users
+                const snap = await getDocs(query(pubCol('users')));
+                const allUsers = [];
+                snap.forEach(d => {
+                    const u = d.data();
+                    allUsers.push(u);
+                });
+                
+                // Store for search
+                window.publicGroupUsers = allUsers;
+                
+                // Render initial list
+                renderPublicGroupMembers(allUsers);
+                
+            } catch(e) {
+                console.error("Error loading public group members:", e);
+                list.innerHTML = '<div class="text-center text-red-400 py-10">خطا در دریافت لیست کاربران</div>';
+            }
+        };
+
+        window.searchPublicGroupMembers = function() {
+            const searchTerm = document.getElementById('public-group-search-input').value.trim().toLowerCase();
+            const list = document.getElementById('members-list');
+            
+            if(!searchTerm) {
+                renderPublicGroupMembers(window.publicGroupUsers);
+                return;
+            }
+            
+            const filteredUsers = window.publicGroupUsers.filter(u => 
+                u.name.toLowerCase().includes(searchTerm) || 
+                u.username.toLowerCase().includes(searchTerm)
+            );
+            
+            renderPublicGroupMembers(filteredUsers);
+        };
+
+        function renderPublicGroupMembers(users) {
+            const list = document.getElementById('members-list');
+            list.innerHTML = '';
+            
+            if(users.length === 0) {
+                list.innerHTML = '<div class="text-center text-gray-400 py-10">کاربری یافت نشد</div>';
+                return;
+            }
+            
+            users.forEach(u => {
+                const isMe = u.uid === currentUser.uid;
+                const el = document.createElement('div');
+                el.className = 'flex items-center p-3 hover:bg-gray-50 cursor-pointer rounded-xl mb-1 transition';
+                el.innerHTML = `
+                    <img src="${u.photoURL}" class="w-10 h-10 rounded-full object-cover ml-3 border border-gray-100">
+                    <div class="flex-1">
+                        <div class="font-bold text-sm text-gray-800 flex items-center gap-2">
+                            ${u.name} 
+                            ${isMe ? '<span class="text-[10px] text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full">خودم</span>' : ''}
+                        </div>
+                        <div class="text-xs text-gray-400">@${u.username}</div>
+                        ${u.bio ? `<div class="text-xs text-gray-500 mt-1">${u.bio}</div>` : ''}
+                    </div>
+                `;
+                el.onclick = () => {
+                    openUserProfile(u.uid);
+                };
+                list.appendChild(el);
+            });
+        };
+
+        // --- 7. MESSAGE CONTEXT MENU ---
+        function startMessageLongPress(e, messageId, isMyMessage, senderId) {
+            e.preventDefault();
+            longPressTimer = setTimeout(() => {
+                showMessageContextMenu(e, messageId, isMyMessage, senderId);
+            }, 800);
+        }
+        
+        function showMessageContextMenu(e, messageId, isMyMessage, senderId) {
+            e.preventDefault();
+            const menu = document.getElementById('context-menu');
+            menu.innerHTML = '';
+            
+            menu.style.left = e.clientX + 'px';
+            menu.style.top = e.clientY + 'px';
+            
+            // Delete message option (for my messages or group admins)
+            if(isMyMessage || (isGroup && currentChatData && currentChatData.createdBy === currentUser.uid)) {
+                const deleteOption = document.createElement('div');
+                deleteOption.className = 'context-menu-item delete';
+                deleteOption.innerHTML = '<i class="fas fa-trash"></i><span>حذف پیام</span>';
+                deleteOption.onclick = async () => {
+                    showConfirmation(
+                        'حذف پیام',
+                        'آیا می‌خواهید این پیام را حذف کنید؟',
+                        () => deleteMessage(messageId),
+                        'trash-alt'
+                    );
+                    menu.classList.add('hidden');
+                };
+                menu.appendChild(deleteOption);
+            }
+            
+            // Save message option
+            const saveOption = document.createElement('div');
+            saveOption.className = 'context-menu-item';
+            saveOption.innerHTML = '<i class="fas fa-bookmark"></i><span>ذخیره پیام</span>';
+            saveOption.onclick = async () => {
+                await saveMessage(messageId);
+                menu.classList.add('hidden');
+            };
+            menu.appendChild(saveOption);
+            
+            menu.classList.remove('hidden');
+            
+            setTimeout(() => {
+                const closeMenu = (event) => {
+                    if(!menu.contains(event.target)) {
+                        menu.classList.add('hidden');
+                        document.removeEventListener('click', closeMenu);
+                    }
+                };
+                document.addEventListener('click', closeMenu);
+            }, 100);
+            
+            return false;
+        }
+        
+        async function deleteMessage(messageId) {
+            try {
+                await deleteDoc(pubDoc('messages', messageId));
+                showToast('پیام حذف شد', 'success');
+            } catch(e) {
+                console.error("Error deleting message:", e);
+                showToast('خطا در حذف پیام', 'error');
+            }
+        }
+        
+        async function saveMessage(messageId) {
+            try {
+                const messageSnap = await getDoc(pubDoc('messages', messageId));
+                if(messageSnap.exists()) {
+                    const messageData = messageSnap.data();
+                    const savedChatId = `saved_${currentUser.uid}`;
+                    
+                    // Add to saved messages
+                    await addDoc(pubCol('messages'), {
+                        ...messageData,
+                        chatId: savedChatId,
+                        originalChatId: messageData.chatId,
+                        savedAt: serverTimestamp()
+                    });
+                    
+                    // Update saved chat's last message
+                    await updateDoc(pubDoc('chats', savedChatId), {
+                        lastMessage: 'پیام ذخیره شد',
+                        lastMessageTime: serverTimestamp()
+                    });
+                    
+                    showToast('پیام ذخیره شد', 'success');
+                }
+            } catch(e) {
+                console.error("Error saving message:", e);
+                showToast('خطا در ذخیره پیام', 'error');
+            }
+        }
+
         window.closeChat = () => {
             document.getElementById('chat-area').classList.add('translate-x-full');
             document.getElementById('sidebar').classList.remove('hidden');
             currentChatId = null;
+            currentChatData = null;
             if(unsubscribeMsg) unsubscribeMsg();
         };
 
+        // --- 8. SEND MESSAGE ---
         window.sendMessage = async () => {
             const i = document.getElementById('message-input');
             const txt = i.value.trim();
@@ -453,39 +1627,41 @@
             try {
                 const ts = serverTimestamp();
                 
-                // 1. Add Message
                 await addDoc(pubCol('messages'), {
                     text: txt, 
                     senderId: currentUser.uid, 
                     senderName: userData.name, 
+                    senderPhoto: userData.photoURL,
                     chatId: currentChatId, 
-                    timestamp: ts
+                    timestamp: ts,
+                    type: 'text'
                 });
 
-                // 2. Update Chat Metadata (for sidebar)
-                if(currentChatId !== 'global_public_group') {
-                    const ids = currentChatId.split('_');
+                // Update Chat Metadata
+                if(currentChatId !== 'global_public_group' && !currentChatId.startsWith('saved_')) {
                     const chatRef = pubDoc('chats', currentChatId);
                     
-                    const updateData = {
-                        lastMessage: txt,
-                        lastMessageTime: ts,
-                        participantIds: ids,
-                        type: 'private'
-                    };
-                    
-                    updateData[`participantsData.${currentUser.uid}`] = {
-                        name: userData.name,
-                        photo: userData.photoURL
-                    };
-
-                    await setDoc(chatRef, updateData, {merge: true});
+                    await updateDoc(chatRef, {
+                        lastMessage: txt.length > 30 ? txt.substring(0, 30) + '...' : txt,
+                        lastMessageTime: ts
+                    });
                 }
 
-            } catch(e) { console.error("Send Error", e); }
+            } catch(e) { 
+                console.error("Send Error", e);
+                showToast('خطا در ارسال پیام', 'error');
+            }
         };
 
-        // --- 5. SEARCH & NEW CHAT (FIXED) ---
+        // --- 9. SEARCH ---
+        window.handleSearchClick = () => {
+            const searchBar = document.getElementById('search-bar');
+            searchBar.classList.toggle('hidden');
+            if(!searchBar.classList.contains('hidden')) {
+                document.getElementById('search-input').focus();
+            }
+        };
+
         let st;
         window.handleSearch = () => {
             clearTimeout(st);
@@ -494,13 +1670,10 @@
             if(!v) { r.classList.add('hidden'); return; }
             
             st = setTimeout(async () => {
-                // همه کاربران رو بگیر و در جاوااسکریپت فیلتر کن
-                const snap = await getDocs(query(pubCol('users'), limit(50)));
-                r.innerHTML = '';
-                r.classList.remove('hidden');
-                
+                // Search users
+                const usersSnap = await getDocs(query(pubCol('users'), limit(50)));
                 const users = [];
-                snap.forEach(d => {
+                usersSnap.forEach(d => {
                     const u = d.data();
                     if(u.uid === currentUser.uid) return;
                     if(u.username.includes(v) || u.name.includes(v)) {
@@ -508,13 +1681,30 @@
                     }
                 });
                 
-                if(users.length === 0) {
-                     r.innerHTML = '<div class="p-3 text-center text-xs text-gray-500">کاربری یافت نشد</div>';
+                // Search groups (excluding groups user is already in)
+                const chatsSnap = await getDocs(query(pubCol('chats'), where('type', '==', 'group')));
+                const groups = [];
+                chatsSnap.forEach(d => {
+                    const chat = d.data();
+                    // If user is not in this group
+                    if(!chat.participantIds.includes(currentUser.uid)) {
+                        if(chat.title && chat.title.toLowerCase().includes(v)) {
+                            groups.push({id: d.id, ...chat});
+                        }
+                    }
+                });
+                
+                r.innerHTML = '';
+                r.classList.remove('hidden');
+                
+                if(users.length === 0 && groups.length === 0) {
+                     r.innerHTML = '<div class="p-3 text-center text-xs text-gray-500">کاربر یا گروهی یافت نشد</div>';
                 }
 
+                // Display users
                 users.forEach(u => {
                     const el = document.createElement('div');
-                    el.className = 'flex items-center p-3 hover:bg-blue-100 cursor-pointer border-b border-blue-100 last:border-0 transition';
+                    el.className = 'flex items-center p-3 hover:bg-blue-100 cursor-pointer border-b border-blue-100 transition';
                     el.innerHTML = `
                         <img src="${u.photoURL}" class="w-10 h-10 rounded-full ml-3 object-cover">
                         <div>
@@ -539,72 +1729,1020 @@
                         openChat(chatId, u.name, u.photoURL, false);
                         r.classList.add('hidden');
                         document.getElementById('search-input').value = '';
+                        document.getElementById('search-bar').classList.add('hidden');
                     };
+                    r.appendChild(el);
+                });
+                
+                // Display groups
+                groups.forEach(g => {
+                    const el = document.createElement('div');
+                    el.className = 'flex items-center p-3 hover:bg-green-100 cursor-pointer border-b border-green-100 transition';
+                    el.innerHTML = `
+                        <div class="w-10 h-10 rounded-full bg-green-500 text-white flex items-center justify-center ml-3">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="flex-1">
+                            <div class="text-sm font-bold text-gray-800">${g.title}</div>
+                            <div class="text-xs text-gray-500">${g.participantIds.length} عضو</div>
+                        </div>
+                        <button onclick="joinGroup('${g.id}')" class="bg-blue-600 text-white text-xs px-3 py-1 rounded-lg hover:bg-blue-700 transition">عضویت</button>
+                    `;
                     r.appendChild(el);
                 });
             }, 600);
         };
 
-        // --- 6. MEMBERS & SETTINGS ---
-        window.handleHeaderClick = async () => {
-            if(!isGroup) return; 
-            const m = document.getElementById('members-modal');
-            const l = document.getElementById('members-list');
-            m.classList.remove('hidden');
-            l.innerHTML = '<div class="text-center mt-10 text-gray-400"><i class="fas fa-spinner fa-spin"></i></div>';
+        // Join group function
+        window.joinGroup = async function(groupId) {
+            try {
+                const chatRef = pubDoc('chats', groupId);
+                const chatSnap = await getDoc(chatRef);
+                
+                if(chatSnap.exists()) {
+                    const chatData = chatSnap.data();
+                    
+                    // Check if user is already a member
+                    if(chatData.participantIds.includes(currentUser.uid)) {
+                        showToast('شما قبلا در این گروه عضو هستید', 'warning');
+                        return;
+                    }
+                    
+                    // Add user to group
+                    await updateDoc(chatRef, {
+                        participantIds: arrayUnion(currentUser.uid),
+                        [`participantsData.${currentUser.uid}`]: {
+                            name: userData.name,
+                            photo: userData.photoURL
+                        }
+                    });
+                    
+                    // Send system message
+                    await addDoc(pubCol('messages'), {
+                        text: `${userData.name} به گروه پیوست`,
+                        senderId: currentUser.uid,
+                        senderName: userData.name,
+                        senderPhoto: userData.photoURL,
+                        chatId: groupId,
+                        timestamp: serverTimestamp(),
+                        isSystem: true
+                    });
+                    
+                    // Close search results
+                    document.getElementById('search-results').classList.add('hidden');
+                    document.getElementById('search-input').value = '';
+                    document.getElementById('search-bar').classList.add('hidden');
+                    
+                    // Open the group
+                    openChat(groupId, chatData.title, chatData.photo, true);
+                    showToast('با موفقیت به گروه پیوستید', 'success');
+                }
+            } catch(e) {
+                console.error("Error joining group:", e);
+                showToast('خطا در پیوستن به گروه', 'error');
+            }
+        };
+
+        // --- 10. GROUP MEMBERS MANAGEMENT ---
+        window.openGroupMembers = async () => {
+            if(!isGroup || !currentChatId || currentChatId === 'global_public_group') return;
+            
+            const modal = document.getElementById('members-modal');
+            const list = document.getElementById('members-list');
+            const addSection = document.getElementById('add-member-section');
+            const title = document.getElementById('members-modal-title');
+            const searchContainer = document.getElementById('public-group-search-container');
+            
+            modal.classList.remove('hidden');
+            title.textContent = 'اعضای گروه';
+            searchContainer.classList.add('hidden');
             
             try {
-                const snap = await getDocs(query(pubCol('users'), orderBy('createdAt', 'desc'), limit(50)));
-                l.innerHTML = '';
-                snap.forEach(d => {
-                    const u = d.data();
-                    const isMe = u.uid === currentUser.uid;
-                    const el = document.createElement('div');
-                    el.className = 'flex items-center p-2 hover:bg-gray-50 cursor-pointer rounded-xl mb-1 transition';
-                    el.innerHTML = `
-                        <img src="${u.photoURL}" class="w-10 h-10 rounded-full object-cover ml-3 border border-gray-100">
-                        <div class="flex-1">
-                            <div class="font-bold text-sm text-gray-800">${u.name} ${isMe ? '<span class="text-[10px] text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full mr-1">خودم</span>' : ''}</div>
-                            <div class="text-xs text-gray-400">@${u.username}</div>
-                        </div>
-                        <div class="text-gray-300"><i class="fas fa-comment-alt"></i></div>
-                    `;
-                    if(!isMe) {
-                        el.onclick = async () => {
-                            m.classList.add('hidden');
-                            const chatId = [currentUser.uid, u.uid].sort().join('_');
-                            await setDoc(pubDoc('chats', chatId), {
-                                participantIds: [currentUser.uid, u.uid],
-                                participantsData: {
-                                    [currentUser.uid]: { name: userData.name, photo: userData.photoURL },
-                                    [u.uid]: { name: u.name, photo: u.photoURL }
-                                },
-                                type: 'private'
-                            }, {merge: true});
-                            openChat(chatId, u.name, u.photoURL, false);
-                        };
+                const chatSnap = await getDoc(pubDoc('chats', currentChatId));
+                if(chatSnap.exists()) {
+                    const chatData = chatSnap.data();
+                    const participantIds = chatData.participantIds || [];
+                    
+                    list.innerHTML = '';
+                    
+                    // Show add member section for group creator
+                    if(chatData.createdBy === currentUser.uid) {
+                        addSection.classList.remove('hidden');
+                    } else {
+                        addSection.classList.add('hidden');
                     }
-                    l.appendChild(el);
+                    
+                    // Get creator info
+                    let creatorName = 'ناشناس';
+                    if(chatData.createdBy) {
+                        const creatorSnap = await getDoc(pubDoc('users', chatData.createdBy));
+                        if(creatorSnap.exists()) {
+                            creatorName = creatorSnap.data().name;
+                        }
+                    }
+                    
+                    // Add creator section
+                    const creatorDiv = document.createElement('div');
+                    creatorDiv.className = 'p-3 bg-blue-50 rounded-xl mb-3';
+                    creatorDiv.innerHTML = `
+                        <div class="text-xs text-blue-600 mb-1">سازنده گروه</div>
+                        <div class="flex items-center">
+                            <i class="fas fa-crown text-yellow-500 ml-2"></i>
+                            <div class="font-bold">${creatorName}</div>
+                        </div>
+                    `;
+                    list.appendChild(creatorDiv);
+                    
+                    // Add members
+                    for(const uid of participantIds) {
+                        const userSnap = await getDoc(pubDoc('users', uid));
+                        if(userSnap.exists()) {
+                            const u = userSnap.data();
+                            const isCreator = uid === chatData.createdBy;
+                            const isMe = uid === currentUser.uid;
+                            
+                            const el = document.createElement('div');
+                            el.className = 'flex items-center p-3 hover:bg-gray-50 cursor-pointer rounded-xl mb-1 transition';
+                            
+                            let actions = '';
+                            if(!isMe && chatData.createdBy === currentUser.uid && !isCreator) {
+                                actions = `
+                                    <div class="flex gap-2">
+                                        <button onclick="event.stopPropagation(); kickMember('${uid}')" class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-lg hover:bg-red-200">حذف</button>
+                                    </div>
+                                `;
+                            }
+                            
+                            el.innerHTML = `
+                                <img src="${u.photoURL}" class="w-10 h-10 rounded-full object-cover ml-3 border border-gray-100">
+                                <div class="flex-1">
+                                    <div class="font-bold text-sm text-gray-800 flex items-center gap-2">
+                                        ${u.name} 
+                                        ${isCreator ? '<span class="text-[10px] text-yellow-600 bg-yellow-50 px-2 py-0.5 rounded-full">سازنده</span>' : ''}
+                                        ${isMe ? '<span class="text-[10px] text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full">خودم</span>' : ''}
+                                    </div>
+                                    <div class="text-xs text-gray-400">@${u.username}</div>
+                                </div>
+                                ${actions}
+                            `;
+                            list.appendChild(el);
+                        }
+                    }
+                    
+                    if(participantIds.length === 0) {
+                        list.innerHTML = '<div class="text-center text-gray-400 py-10">هیچ عضوی در گروه وجود ندارد</div>';
+                    }
+                }
+            } catch(e) { 
+                console.error(e);
+                list.innerHTML = '<div class="text-center text-red-400 py-10">خطا در دریافت لیست اعضا</div>';
+            }
+        };
+
+        window.closeMembersModal = () => {
+            document.getElementById('members-modal').classList.add('hidden');
+            document.getElementById('add-member-username').value = '';
+            document.getElementById('public-group-search-input').value = '';
+        };
+
+        async function kickMember(userId) {
+            showConfirmation(
+                'حذف عضو',
+                'آیا مطمئن هستید که می‌خواهید این کاربر را از گروه حذف کنید؟',
+                async () => {
+                    try {
+                        const chatRef = pubDoc('chats', currentChatId);
+                        const chatSnap = await getDoc(chatRef);
+                        
+                        if(chatSnap.exists()) {
+                            const chatData = chatSnap.data();
+                            const newParticipants = chatData.participantIds.filter(id => id !== userId);
+                            
+                            await updateDoc(chatRef, {
+                                participantIds: newParticipants
+                            });
+                            
+                            // Send kick message
+                            const userSnap = await getDoc(pubDoc('users', userId));
+                            if(userSnap.exists()) {
+                                const userName = userSnap.data().name;
+                                await addDoc(pubCol('messages'), {
+                                    text: `${userName} از گروه حذف شد`,
+                                    senderId: currentUser.uid,
+                                    senderName: userData.name,
+                                    senderPhoto: userData.photoURL,
+                                    chatId: currentChatId,
+                                    timestamp: serverTimestamp(),
+                                    isSystem: true
+                                });
+                            }
+                            
+                            openGroupMembers(); // Refresh
+                            showToast('کاربر از گروه حذف شد', 'success');
+                        }
+                    } catch(e) {
+                        console.error("Error kicking member:", e);
+                        showToast('خطا در حذف کاربر', 'error');
+                    }
+                },
+                'user-slash',
+                'حذف',
+                'red'
+            );
+        }
+
+        window.addMemberByUsername = async () => {
+            const username = document.getElementById('add-member-username').value.trim().toLowerCase();
+            
+            if(!username) {
+                showToast('لطفا آیدی کاربر را وارد کنید', 'error');
+                return;
+            }
+            
+            try {
+                // Find user by username
+                const q = query(pubCol('users'), where('username', '==', username));
+                const snap = await getDocs(q);
+                
+                if(snap.empty) {
+                    showToast('کاربری با این آیدی یافت نشد', 'error');
+                    return;
+                }
+                
+                const userDoc = snap.docs[0];
+                const user = userDoc.data();
+                
+                // Check if user is already in group
+                const chatSnap = await getDoc(pubDoc('chats', currentChatId));
+                if(chatSnap.exists()) {
+                    const chatData = chatSnap.data();
+                    
+                    if(chatData.participantIds.includes(user.uid)) {
+                        showToast('این کاربر قبلا در گروه عضو است', 'warning');
+                        return;
+                    }
+                    
+                    // Add user to group
+                    await updateDoc(pubDoc('chats', currentChatId), {
+                        participantIds: arrayUnion(user.uid),
+                        [`participantsData.${user.uid}`]: {
+                            name: user.name,
+                            photo: user.photoURL
+                        }
+                    });
+                    
+                    // Send welcome message
+                    await addDoc(pubCol('messages'), {
+                        text: `${user.name} به گروه اضافه شد`,
+                        senderId: currentUser.uid,
+                        senderName: userData.name,
+                        senderPhoto: userData.photoURL,
+                        chatId: currentChatId,
+                        timestamp: serverTimestamp(),
+                        isSystem: true
+                    });
+                    
+                    document.getElementById('add-member-username').value = '';
+                    openGroupMembers(); // Refresh
+                    showToast('کاربر به گروه اضافه شد', 'success');
+                }
+            } catch(e) {
+                console.error("Error adding member:", e);
+                showToast('خطا در اضافه کردن کاربر', 'error');
+            }
+        };
+
+        // --- 11. CHAT INFO ---
+        window.showChatInfo = async () => {
+            if(!currentChatId || currentChatId === 'global_public_group') return; // گروه عمومی اطلاعات گروه ندارد
+            
+            const modal = document.getElementById('chat-info-modal');
+            const titleEl = document.getElementById('chat-info-title');
+            const typeEl = document.getElementById('chat-info-type');
+            const descEl = document.getElementById('chat-info-description');
+            const actionsEl = document.getElementById('chat-info-actions');
+            const bioEl = document.getElementById('chat-info-bio');
+            const editBtn = document.getElementById('edit-bio-btn');
+            
+            modal.classList.remove('hidden');
+            
+            try {
+                const chatSnap = await getDoc(pubDoc('chats', currentChatId));
+                if(chatSnap.exists()) {
+                    const chatData = chatSnap.data();
+                    
+                    titleEl.textContent = chatData.title || (isGroup ? 'گروه' : 'چت خصوصی');
+                    typeEl.textContent = isGroup ? 'گروه' : 'چت خصوصی';
+                    descEl.textContent = chatData.description || '';
+                    
+                    // نمایش بیوگرافی گروه
+                    bioEl.textContent = chatData.bio || 'بیوگرافی تنظیم نشده';
+                    
+                    // اگر کاربر سازنده گروه باشد، دکمه ویرایش را نشان بده
+                    if(isGroup && chatData.createdBy === currentUser.uid) {
+                        editBtn.classList.remove('hidden');
+                    } else {
+                        editBtn.classList.add('hidden');
+                    }
+                    
+                    actionsEl.innerHTML = '';
+                    
+                    // Add actions based on chat type
+                    if(isGroup) {
+                        // View members button (only for groups)
+                        const membersBtn = document.createElement('button');
+                        membersBtn.className = 'w-full bg-blue-100 text-blue-600 py-3 rounded-xl font-bold hover:bg-blue-200 transition flex items-center justify-center gap-2';
+                        membersBtn.innerHTML = '<i class="fas fa-users"></i><span>مشاهده اعضا</span>';
+                        membersBtn.onclick = () => {
+                            modal.classList.add('hidden');
+                            openGroupMembers();
+                        };
+                        actionsEl.appendChild(membersBtn);
+                        
+                        // Leave group button
+                        const leaveBtn = document.createElement('button');
+                        leaveBtn.className = 'w-full bg-red-100 text-red-600 py-3 rounded-xl font-bold hover:bg-red-200 transition mt-2 flex items-center justify-center gap-2';
+                        leaveBtn.innerHTML = '<i class="fas fa-sign-out-alt"></i><span>ترک گروه</span>';
+                        leaveBtn.onclick = async () => {
+                            showConfirmation(
+                                'ترک گروه',
+                                'آیا مطمئن هستید که می‌خواهید گروه را ترک کنید؟',
+                                () => leaveGroup(currentChatId),
+                                'sign-out-alt',
+                                'ترک گروه',
+                                'red'
+                            );
+                            modal.classList.add('hidden');
+                        };
+                        actionsEl.appendChild(leaveBtn);
+                    }
+                    
+                    // Clear chat button
+                    const clearBtn = document.createElement('button');
+                    clearBtn.className = 'w-full bg-gray-100 text-gray-600 py-3 rounded-xl font-bold hover:bg-gray-200 transition mt-2 flex items-center justify-center gap-2';
+                    clearBtn.innerHTML = '<i class="fas fa-broom"></i><span>پاک کردن تاریخچه</span>';
+                    clearBtn.onclick = () => {
+                        showConfirmation(
+                            'پاک کردن تاریخچه',
+                            'آیا می‌خواهید تمام پیام‌های این گفتگو را پاک کنید؟',
+                            () => {
+                                const c = document.getElementById('messages-container');
+                                c.innerHTML = '<div class="text-center bg-black bg-opacity-20 text-white rounded-full text-xs py-1 px-3 mx-auto w-max mt-10 backdrop-blur-sm">تاریخچه پاک شد</div>';
+                                modal.classList.add('hidden');
+                                showToast('تاریخچه پاک شد', 'success');
+                            },
+                            'broom',
+                            'پاک کردن',
+                            'gray'
+                        );
+                    };
+                    actionsEl.appendChild(clearBtn);
+                }
+            } catch(e) {
+                console.error("Error loading chat info:", e);
+            }
+        };
+
+        window.closeChatInfo = () => {
+            document.getElementById('chat-info-modal').classList.add('hidden');
+        };
+
+        // توابع بیوگرافی گروه
+        window.editGroupBio = function() {
+            const currentBio = document.getElementById('chat-info-bio').textContent;
+            document.getElementById('edit-group-bio').value = currentBio;
+            document.getElementById('chat-info-bio').classList.add('hidden');
+            document.getElementById('chat-info-edit-bio').classList.remove('hidden');
+            document.getElementById('edit-bio-btn').classList.add('hidden');
+        };
+
+        window.cancelEditGroupBio = function() {
+            document.getElementById('chat-info-bio').classList.remove('hidden');
+            document.getElementById('chat-info-edit-bio').classList.add('hidden');
+            document.getElementById('edit-bio-btn').classList.remove('hidden');
+        };
+
+        window.saveGroupBio = async function() {
+            const newBio = document.getElementById('edit-group-bio').value.trim();
+            
+            try {
+                await updateDoc(pubDoc('chats', currentChatId), {
+                    bio: newBio
                 });
-            } catch(e) { l.innerHTML = 'خطا در دریافت لیست'; }
+                
+                document.getElementById('chat-info-bio').textContent = newBio || 'بیوگرافی تنظیم نشده';
+                cancelEditGroupBio();
+                showToast('بیوگرافی گروه ذخیره شد', 'success');
+            } catch(e) {
+                console.error("Error saving group bio:", e);
+                showToast('خطا در ذخیره بیوگرافی', 'error');
+            }
         };
 
-        window.openSettings = () => document.getElementById('settings-modal').classList.remove('hidden');
-        window.handleSetImage = (i) => processImage(i, (r) => { tempImg = r; document.getElementById('set-avatar').src = r; });
-        
-        window.saveSettings = async () => {
-            const n = document.getElementById('set-name').value;
-            if(!n) return;
-            const btn = document.querySelector('#settings-modal button');
-            btn.innerText = 'درحال ذخیره...';
-            await updateDoc(pubDoc('users', currentUser.uid), { name: n, photoURL: tempImg || userData.photoURL });
-            userData.name = n; if(tempImg) userData.photoURL = tempImg;
+        // --- 12. مشاهده پروفایل کاربر ---
+        window.openUserProfile = async function(userId) {
+            if(userId === currentUser.uid) {
+                openProfileSettings();
+                return;
+            }
+            
+            try {
+                const userSnap = await getDoc(pubDoc('users', userId));
+                if(userSnap.exists()) {
+                    const user = userSnap.data();
+                    
+                    // ساخت مودال پروفایل
+                    const modalHTML = `
+                        <div class="modal-overlay" id="user-profile-modal">
+                            <div class="modal-content max-w-sm">
+                                <div class="p-4 border-b flex justify-between items-center bg-gray-50">
+                                    <h3 class="font-bold">پروفایل کاربر</h3>
+                                    <button onclick="document.getElementById('user-profile-modal').remove()" class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                <div class="p-6 text-center">
+                                    <img src="${user.photoURL}" 
+                                         class="w-24 h-24 rounded-full mx-auto mb-4 object-cover border-4 border-white shadow-lg"
+                                         onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=3b82f6&color=fff'">
+                                    <h3 class="font-bold text-xl mb-1">${user.name}</h3>
+                                    <p class="text-gray-500 mb-2">@${user.username}</p>
+                                    <div class="bg-gray-50 rounded-xl p-4 mb-4 text-right">
+                                        <p class="text-gray-700">${user.bio || 'بیوگرافی تنظیم نشده'}</p>
+                                    </div>
+                                    <button onclick="startChatWithUser('${userId}')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition">
+                                        شروع گفتگو
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    const modalDiv = document.createElement('div');
+                    modalDiv.innerHTML = modalHTML;
+                    document.body.appendChild(modalDiv);
+                }
+            } catch(e) {
+                console.error("Error opening user profile:", e);
+                showToast('خطا در بارگذاری پروفایل', 'error');
+            }
+        };
+
+        // شروع گفتگو با کاربر
+        window.startChatWithUser = async function(userId) {
+            // بستن مودال پروفایل
+            const modal = document.getElementById('user-profile-modal');
+            if (modal) modal.remove();
+            
+            try {
+                const userSnap = await getDoc(pubDoc('users', userId));
+                if(userSnap.exists()) {
+                    const user = userSnap.data();
+                    const chatId = [currentUser.uid, userId].sort().join('_');
+                    
+                    const chatRef = pubDoc('chats', chatId);
+                    await setDoc(chatRef, {
+                        participantIds: [currentUser.uid, userId],
+                        participantsData: {
+                            [currentUser.uid]: { name: userData.name, photo: userData.photoURL },
+                            [userId]: { name: user.name, photo: user.photoURL }
+                        },
+                        type: 'private',
+                        createdAt: serverTimestamp()
+                    }, {merge: true});
+
+                    openChat(chatId, user.name, user.photoURL, false);
+                }
+            } catch(e) {
+                console.error("Error starting chat:", e);
+                showToast('خطا در شروع گفتگو', 'error');
+            }
+        };
+
+        // --- 13. MAIN MENU FUNCTIONS ---
+        window.openMainMenu = () => {
+            const menu = document.getElementById('main-menu');
+            menu.classList.remove('hidden');
+            document.getElementById('menu-avatar').src = userData.photoURL;
+            document.getElementById('menu-name').innerText = userData.name;
+            document.getElementById('menu-username').innerText = '@' + userData.username;
+        };
+
+        window.closeMainMenu = () => {
+            document.getElementById('main-menu').classList.add('hidden');
+        };
+
+        window.showLogoutConfirmation = () => {
+            // بستن منوی اصلی و نمایش مودال تایید
+            closeMainMenu();
+            showConfirmation(
+                'خروج از حساب',
+                'آیا مطمئن هستید که می‌خواهید خارج شوید؟',
+                logout,
+                'sign-out-alt',
+                'خروج',
+                'red'
+            );
+        };
+
+        window.openProfileSettings = () => {
+            closeMainMenu();
+            document.getElementById('settings-modal').classList.remove('hidden');
+            document.getElementById('set-name').value = userData.name;
+            document.getElementById('set-username').value = userData.username;
+            document.getElementById('set-avatar').src = userData.photoURL;
+            document.getElementById('set-bio').value = userData.bio || '';
+            document.getElementById('privacy-toggle').checked = userData.privacy || false;
+        };
+
+        window.closeProfileSettings = () => {
             document.getElementById('settings-modal').classList.add('hidden');
-            btn.innerText = 'ذخیره تغییرات';
-            tempImg = null;
         };
 
-        // Utils
+        window.handleSetImage = (input) => processImage(input, (res) => { 
+            tempImg = res; 
+            document.getElementById('set-avatar').src = res; 
+        });
+
+        window.saveSettings = async () => {
+            const name = document.getElementById('set-name').value.trim();
+            const username = document.getElementById('set-username').value.trim().toLowerCase();
+            const bio = document.getElementById('set-bio').value.trim();
+            const privacy = document.getElementById('privacy-toggle').checked;
+            
+            if(!name || !username) {
+                showToast('لطفا نام و آیدی را وارد کنید', 'error');
+                return;
+            }
+            
+            const btn = document.querySelector('#settings-modal button');
+            const oldText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>در حال ذخیره...</span>';
+            
+            try {
+                // Check if username is taken (by others)
+                if(username !== userData.username) {
+                    const q = query(pubCol('users'), where('username', '==', username));
+                    const snap = await getDocs(q);
+                    if (!snap.empty && snap.docs[0].id !== currentUser.uid) {
+                        throw new Error('این آیدی قبلا گرفته شده است');
+                    }
+                }
+                
+                const updateData = { 
+                    name, 
+                    username,
+                    bio,
+                    privacy
+                };
+                
+                if(tempImg) {
+                    updateData.photoURL = tempImg;
+                }
+                
+                await updateDoc(pubDoc('users', currentUser.uid), updateData);
+                userData = { ...userData, ...updateData };
+                
+                closeProfileSettings();
+                btn.innerHTML = oldText;
+                tempImg = null;
+                
+                // Update UI
+                loadRecentChats();
+                showToast('تغییرات ذخیره شد', 'success');
+                
+            } catch(e) { 
+                showToast(e.message, 'error'); 
+                btn.innerHTML = oldText; 
+            }
+        };
+
+        window.openChangePassword = () => {
+            closeMainMenu();
+            document.getElementById('change-password-modal').classList.remove('hidden');
+        };
+
+        window.closeChangePassword = () => {
+            document.getElementById('change-password-modal').classList.add('hidden');
+            document.getElementById('current-password').value = '';
+            document.getElementById('new-password').value = '';
+            document.getElementById('confirm-password').value = '';
+        };
+
+        window.changePassword = async () => {
+            const currentPass = document.getElementById('current-password').value;
+            const newPass = document.getElementById('new-password').value;
+            const confirmPass = document.getElementById('confirm-password').value;
+            
+            if(!currentPass || !newPass || !confirmPass) {
+                showToast('لطفا تمام فیلدها را پر کنید', 'error');
+                return;
+            }
+            
+            if(newPass.length < 6) {
+                showToast('رمز عبور جدید باید حداقل ۶ کاراکتر باشد', 'error');
+                return;
+            }
+            
+            if(newPass !== confirmPass) {
+                showToast('رمز عبور جدید و تکرار آن مطابقت ندارند', 'error');
+                return;
+            }
+            
+            // Check current password
+            if(userData.password !== currentPass) {
+                showToast('رمز عبور فعلی اشتباه است', 'error');
+                return;
+            }
+            
+            const btn = document.querySelector('#change-password-modal button');
+            const oldText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>در حال تغییر...</span>';
+            
+            try {
+                await updateDoc(pubDoc('users', currentUser.uid), {
+                    password: newPass
+                });
+                
+                userData.password = newPass;
+                closeChangePassword();
+                btn.innerHTML = oldText;
+                
+                showToast('رمز عبور با موفقیت تغییر کرد', 'success');
+                
+            } catch(e) {
+                console.error("Error changing password:", e);
+                showToast('خطا در تغییر رمز عبور', 'error');
+                btn.innerHTML = oldText;
+            }
+        };
+
+        // --- 14. NEW GROUP MODAL ---
+        window.openNewGroupModal = () => {
+            closeMainMenu();
+            document.getElementById('new-group-modal').classList.remove('hidden');
+            selectedGroupMembers = [currentUser.uid];
+            updateSelectedMembersUI();
+            document.getElementById('group-name').value = '';
+            document.getElementById('group-desc').value = '';
+        };
+
+        window.closeNewGroupModal = () => {
+            document.getElementById('new-group-modal').classList.add('hidden');
+        };
+
+        window.searchMembersForGroup = async () => {
+            const v = document.getElementById('group-member-search').value.trim().toLowerCase();
+            const container = document.getElementById('group-member-results');
+            
+            if(!v) {
+                container.innerHTML = '<div class="text-center text-xs text-gray-400 py-4">برای جستجو شروع به تایپ کنید</div>';
+                return;
+            }
+            
+            const snap = await getDocs(query(pubCol('users'), limit(20)));
+            const users = [];
+            snap.forEach(d => {
+                const u = d.data();
+                if(u.uid === currentUser.uid) return;
+                if(u.username.includes(v) || u.name.includes(v)) {
+                    users.push(u);
+                }
+            });
+            
+            container.innerHTML = '';
+            
+            if(users.length === 0) {
+                container.innerHTML = '<div class="text-center text-xs text-gray-400 py-4">کاربری یافت نشد</div>';
+                return;
+            }
+            
+            users.forEach(u => {
+                const isSelected = selectedGroupMembers.includes(u.uid);
+                const el = document.createElement('div');
+                el.className = `flex items-center p-2 ${isSelected ? 'bg-blue-50' : 'hover:bg-gray-50'} cursor-pointer rounded-xl transition`;
+                el.innerHTML = `
+                    <img src="${u.photoURL}" class="w-10 h-10 rounded-full ml-3 object-cover border border-gray-100">
+                    <div class="flex-1">
+                        <div class="font-bold text-sm text-gray-800">${u.name}</div>
+                        <div class="text-xs text-gray-400">@${u.username}</div>
+                    </div>
+                    <div class="w-6 h-6 rounded-full border-2 ${isSelected ? 'bg-blue-500 border-blue-500' : 'border-gray-300'} flex items-center justify-center">
+                        ${isSelected ? '<i class="fas fa-check text-white text-xs"></i>' : ''}
+                    </div>
+                `;
+                el.onclick = () => {
+                    if(isSelected) {
+                        selectedGroupMembers = selectedGroupMembers.filter(id => id !== u.uid);
+                    } else {
+                        selectedGroupMembers.push(u.uid);
+                    }
+                    updateSelectedMembersUI();
+                    searchMembersForGroup(); // Refresh list
+                };
+                container.appendChild(el);
+            });
+        };
+
+        window.updateSelectedMembersUI = () => {
+            const container = document.getElementById('selected-members');
+            container.innerHTML = '';
+            
+            selectedGroupMembers.forEach(async uid => {
+                if(uid === currentUser.uid) {
+                    const el = document.createElement('div');
+                    el.className = 'flex items-center bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs';
+                    el.innerHTML = `
+                        <span>${userData.name} (شما)</span>
+                        <button onclick="removeMemberFromSelection('${uid}')" class="mr-2 text-blue-500 hover:text-blue-700">
+                            <i class="fas fa-times text-xs"></i>
+                        </button>
+                    `;
+                    container.appendChild(el);
+                    return;
+                }
+                
+                // Get user data
+                try {
+                    const snap = await getDoc(pubDoc('users', uid));
+                    if(snap.exists()) {
+                        const u = snap.data();
+                        const el = document.createElement('div');
+                        el.className = 'flex items-center bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs';
+                        el.innerHTML = `
+                            <img src="${u.photoURL}" class="w-5 h-5 rounded-full ml-2 object-cover">
+                            <span>${u.name}</span>
+                            <button onclick="removeMemberFromSelection('${uid}')" class="mr-2 text-gray-500 hover:text-gray-700">
+                                <i class="fas fa-times text-xs"></i>
+                            </button>
+                        `;
+                        container.appendChild(el);
+                    }
+                } catch(e) { console.error(e); }
+            });
+        };
+
+        window.removeMemberFromSelection = (uid) => {
+            if(uid === currentUser.uid && selectedGroupMembers.length <= 1) {
+                showToast('گروه باید حداقل یک عضو داشته باشد', 'error');
+                return;
+            }
+            selectedGroupMembers = selectedGroupMembers.filter(id => id !== uid);
+            updateSelectedMembersUI();
+            searchMembersForGroup();
+        };
+
+        window.createNewGroup = async () => {
+            const name = document.getElementById('group-name').value.trim();
+            const desc = document.getElementById('group-desc').value.trim();
+            
+            if(!name) {
+                showToast('لطفا نام گروه را وارد کنید', 'error');
+                return;
+            }
+            if(selectedGroupMembers.length < 2) {
+                showToast('حداقل یک عضو به غیر از خودتان انتخاب کنید', 'error');
+                return;
+            }
+            
+            const btn = document.querySelector('#new-group-modal button');
+            const oldText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>در حال ساخت...</span>';
+            
+            try {
+                // Generate unique group ID
+                const groupId = 'group_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                
+                // Prepare participants data
+                const participantsData = {};
+                const participantIds = [...selectedGroupMembers];
+                
+                // Get all users data
+                for(const uid of participantIds) {
+                    if(uid === currentUser.uid) {
+                        participantsData[uid] = {
+                            name: userData.name,
+                            photo: userData.photoURL
+                        };
+                    } else {
+                        const snap = await getDoc(pubDoc('users', uid));
+                        if(snap.exists()) {
+                            const u = snap.data();
+                            participantsData[uid] = {
+                                name: u.name,
+                                photo: u.photoURL
+                            };
+                        }
+                    }
+                }
+                
+                // Create group document
+                await setDoc(pubDoc('chats', groupId), {
+                    title: name,
+                    description: desc,
+                    bio: '',
+                    participantIds: participantIds,
+                    participantsData: participantsData,
+                    type: 'group',
+                    createdBy: currentUser.uid,
+                    createdAt: serverTimestamp(),
+                    photo: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=3b82f6&color=fff&length=2`
+                });
+                
+                // Send welcome message
+                await addDoc(pubCol('messages'), {
+                    text: `گروه "${name}" ساخته شد!`,
+                    senderId: currentUser.uid,
+                    senderName: userData.name,
+                    senderPhoto: userData.photoURL,
+                    chatId: groupId,
+                    timestamp: serverTimestamp(),
+                    isSystem: true
+                });
+                
+                // Close modal and open the group
+                closeNewGroupModal();
+                openChat(groupId, name, '', true);
+                showToast('گروه با موفقیت ساخته شد', 'success');
+                btn.innerHTML = oldText;
+                
+            } catch(e) {
+                console.error("Error creating group:", e);
+                showToast('خطا در ساخت گروه', 'error');
+                btn.innerHTML = oldText;
+            }
+        };
+
+        // --- 15. MEDIA HANDLING ---
+        window.toggleAttachmentMenu = () => {
+            const menu = document.getElementById('attachment-menu');
+            menu.classList.toggle('hidden');
+        };
+
+        window.openImagePicker = () => {
+            document.getElementById('image-picker').click();
+            document.getElementById('attachment-menu').classList.add('hidden');
+        };
+
+        window.openVideoPicker = () => {
+            document.getElementById('video-picker').click();
+            document.getElementById('attachment-menu').classList.add('hidden');
+        };
+
+        async function handleImageSend(input) {
+            if(input.files && input.files[0]) {
+                try {
+                    const file = input.files[0];
+                    const storageRef = ref(storage, `images/${currentUser.uid}_${Date.now()}_${file.name}`);
+                    await uploadBytes(storageRef, file);
+                    const downloadURL = await getDownloadURL(storageRef);
+                    
+                    await addDoc(pubCol('messages'), {
+                        type: 'image',
+                        content: downloadURL,
+                        senderId: currentUser.uid,
+                        senderName: userData.name,
+                        senderPhoto: userData.photoURL,
+                        chatId: currentChatId,
+                        timestamp: serverTimestamp()
+                    });
+                    
+                    // Update chat last message
+                    if(currentChatId && !currentChatId.startsWith('saved_')) {
+                        await updateDoc(pubDoc('chats', currentChatId), {
+                            lastMessage: '📷 عکس',
+                            lastMessageTime: serverTimestamp()
+                        });
+                    }
+                    
+                    showToast('عکس ارسال شد', 'success');
+                    
+                } catch(e) {
+                    console.error("Error uploading image:", e);
+                    showToast('خطا در آپلود عکس', 'error');
+                }
+            }
+        }
+
+        async function handleVideoSend(input) {
+            if(input.files && input.files[0]) {
+                try {
+                    const file = input.files[0];
+                    if(file.size > 50 * 1024 * 1024) {
+                        showToast('حجم فایل نباید بیشتر از ۵۰ مگابایت باشد', 'error');
+                        return;
+                    }
+                    
+                    const storageRef = ref(storage, `videos/${currentUser.uid}_${Date.now()}_${file.name}`);
+                    await uploadBytes(storageRef, file);
+                    const downloadURL = await getDownloadURL(storageRef);
+                    
+                    await addDoc(pubCol('messages'), {
+                        type: 'video',
+                        content: downloadURL,
+                        senderId: currentUser.uid,
+                        senderName: userData.name,
+                        senderPhoto: userData.photoURL,
+                        chatId: currentChatId,
+                        timestamp: serverTimestamp()
+                    });
+                    
+                    // Update chat last message
+                    if(currentChatId && !currentChatId.startsWith('saved_')) {
+                        await updateDoc(pubDoc('chats', currentChatId), {
+                            lastMessage: '🎬 ویدئو',
+                            lastMessageTime: serverTimestamp()
+                        });
+                    }
+                    
+                    showToast('ویدئو ارسال شد', 'success');
+                    
+                } catch(e) {
+                    console.error("Error uploading video:", e);
+                    showToast('خطا در آپلود ویدئو', 'error');
+                }
+            }
+        }
+
+        // --- 16. APP SETTINGS ---
+        window.openAppSettings = () => {
+            closeMainMenu();
+            document.getElementById('app-settings-modal').classList.remove('hidden');
+        };
+
+        window.closeAppSettings = () => {
+            document.getElementById('app-settings-modal').classList.add('hidden');
+        };
+
+        window.changeBackground = (bg) => {
+            // حذف تمام کلاس‌های پس‌زمینه
+            document.body.classList.remove('chat-bg', 'bg-purple-red');
+            document.body.style.background = '';
+            document.body.style.backgroundImage = '';
+            
+            // اضافه کردن کلاس جدید
+            if (bg === 'default') {
+                document.body.classList.add('chat-bg');
+            } else if (bg === 'purple-red') {
+                document.body.classList.add('bg-purple-red');
+                document.body.style.backgroundSize = 'cover';
+                document.body.style.backgroundAttachment = 'fixed';
+            }
+            
+            // به‌روزرسانی نشان‌های چک‌مارک
+            document.getElementById('default-check').classList.toggle('hidden', bg !== 'default');
+            document.getElementById('purple-red-check').classList.toggle('hidden', bg !== 'purple-red');
+            
+            // ذخیره در localStorage
+            localStorage.setItem('chat_background', bg);
+            currentBackground = bg;
+            showToast('پس‌زمینه تغییر کرد', 'success');
+        };
+
+        // --- 17. OTHER MENU FUNCTIONS ---
+        window.openSavedMessages = async () => {
+            closeMainMenu();
+            const savedChatId = `saved_${currentUser.uid}`;
+            await openChat(savedChatId, 'پیام‌های ذخیره شده', '', false);
+        };
+
+        window.openInviteModal = () => {
+            closeMainMenu();
+            document.getElementById('invite-modal').classList.remove('hidden');
+        };
+
+        window.closeInviteModal = () => {
+            document.getElementById('invite-modal').classList.add('hidden');
+        };
+
+        window.copyInviteLink = () => {
+            const inviteLink = 'https://bardiaff121.github.io/bardia/';
+            navigator.clipboard.writeText(inviteLink).then(() => {
+                showToast('لینک دعوت کپی شد', 'success');
+                closeInviteModal();
+            }).catch(() => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = inviteLink;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showToast('لینک دعوت کپی شد', 'success');
+                closeInviteModal();
+            });
+        };
+
+        function logout() {
+            localStorage.removeItem('currentUser');
+            currentUser = null;
+            userData = null;
+            document.getElementById('main-app').classList.add('hidden');
+            document.getElementById('login-screen').classList.remove('hidden');
+            showToast('با موفقیت خارج شدید', 'success');
+        }
+
+        // --- UTILS ---
         function processImage(input, cb) {
             if(input.files && input.files[0]) {
                 const fr = new FileReader();
@@ -631,7 +2769,14 @@
             this.style.height = 'auto';
             this.style.height = (this.scrollHeight) + 'px';
         });
+        
+        // Close attachment menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if(!e.target.closest('#attachment-menu') && !e.target.closest('button[onclick*="toggleAttachmentMenu"]')) {
+                document.getElementById('attachment-menu').classList.add('hidden');
+            }
+        });
 
     </script>
 </body>
-    </html>
+                        </html>
