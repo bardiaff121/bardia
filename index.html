@@ -3,693 +3,635 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>پیام‌رسان تلگرام کلون</title>
+    <title>پیام‌رسان فارسی</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- FontAwesome for Icons -->
+    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Vazir Font (Persian) -->
+    <!-- Vazir Font -->
     <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
 
     <style>
-        body {
-            font-family: 'Vazirmatn', sans-serif;
-            background-color: #f3f4f6;
-            overscroll-behavior-y: none;
-        }
-        
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 10px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-        }
-
-        .message-bubble {
-            max-width: 75%;
-            word-wrap: break-word;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-        }
-
-        .animate-fade-in {
-            animation: fadeIn 0.3s ease-in-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .app-h {
-            height: 100vh;
-            height: 100dvh;
-        }
+        body { font-family: 'Vazirmatn', sans-serif; background-color: #f3f4f6; overscroll-behavior-y: none; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .message-bubble { max-width: 85%; box-shadow: 0 1px 2px rgba(0,0,0,0.1); word-wrap: break-word; }
+        .app-h { height: 100vh; height: 100dvh; }
+        .chat-bg { background-color: #8e9aaf; background-image: url('https://web.telegram.org/img/bg_0.png'); background-size: cover; background-attachment: fixed; }
     </style>
 </head>
-<body class="text-gray-800 app-h overflow-hidden">
+<body class="text-gray-800 app-h overflow-hidden select-none bg-gray-50">
 
-    <!-- Auth/Signup Screen (Default visible until checked otherwise) -->
-    <div id="auth-screen" class="fixed inset-0 bg-white z-40 hidden flex flex-col items-center justify-center p-6 animate-fade-in">
-        <div class="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
-            <div class="bg-blue-500 p-8 text-center">
-                <div class="w-24 h-24 bg-white rounded-full mx-auto mb-4 flex items-center justify-center text-blue-500 text-3xl overflow-hidden relative group cursor-pointer" onclick="document.getElementById('profile-upload').click()">
-                    <img id="auth-preview-img" class="w-full h-full object-cover hidden" src="" alt="Profile">
-                    <i id="auth-preview-icon" class="fas fa-camera"></i>
-                    <div class="absolute inset-0 bg-black bg-opacity-30 hidden group-hover:flex items-center justify-center text-white text-xs">تغییر</div>
+    <!-- 1. AUTH SCREEN (ورود/ثبت نام) -->
+    <div id="auth-screen" class="fixed inset-0 bg-white z-50 hidden flex flex-col items-center justify-center p-6">
+        <div class="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100">
+            <div class="bg-blue-600 p-8 text-center relative overflow-hidden">
+                <div class="absolute inset-0 bg-blue-500 opacity-50 blur-xl"></div>
+                <div class="relative z-10">
+                    <div class="w-24 h-24 bg-white rounded-full mx-auto mb-4 flex items-center justify-center text-blue-500 relative group cursor-pointer shadow-lg ring-4 ring-blue-400/30" onclick="document.getElementById('profile-upload').click()">
+                        <img id="auth-preview-img" class="w-full h-full rounded-full object-cover hidden" src="">
+                        <i id="auth-preview-icon" class="fas fa-camera text-3xl"></i>
+                    </div>
+                    <h2 class="text-white text-2xl font-bold">خوش آمدید</h2>
+                    <p class="text-blue-100 text-sm mt-2">برای شروع عکس و نام خود را وارد کنید</p>
                 </div>
-                <h2 class="text-white text-2xl font-bold">خوش آمدید</h2>
-                <p class="text-blue-100 text-sm mt-2">لطفا پروفایل خود را تکمیل کنید</p>
             </div>
-            
-            <div class="p-8 space-y-4">
+            <div class="p-8 space-y-5">
                 <input type="file" id="profile-upload" accept="image/*" class="hidden" onchange="handleImagePreview(this)">
-                
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">نام نمایشی</label>
-                    <input type="text" id="auth-name" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:outline-none transition" placeholder="مثلا: علی رضایی">
+                    <label class="text-xs font-bold text-gray-500 mr-1 mb-1 block">نام نمایشی</label>
+                    <input type="text" id="auth-name" class="w-full p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none bg-gray-50 transition" placeholder="مثلا: علی">
                 </div>
-                
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">آیدی (نام کاربری)</label>
-                    <div class="relative">
-                        <span class="absolute right-4 top-3 text-gray-400">@</span>
-                        <input type="text" id="auth-username" class="w-full pr-8 pl-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:outline-none transition" placeholder="username">
+                    <label class="text-xs font-bold text-gray-500 mr-1 mb-1 block">آیدی کاربری (انگلیسی)</label>
+                    <div class="relative" dir="ltr">
+                        <span class="absolute left-3 top-3.5 text-gray-400">@</span>
+                        <input type="text" id="auth-username" class="w-full pl-8 p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none bg-gray-50 transition text-left" placeholder="username">
                     </div>
                 </div>
-
-                <button onclick="completeSignup()" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-lg transition shadow-md mt-4">
-                    ورود به برنامه
-                </button>
+                <button onclick="completeSignup()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-200 transition active:scale-95">شروع گفتگو</button>
             </div>
         </div>
     </div>
 
-    <!-- Main App Container -->
+    <!-- 2. MAIN APP -->
     <div id="main-app" class="hidden w-full h-full flex relative bg-white">
         
-        <!-- Sidebar -->
+        <!-- Sidebar (لیست چت‌ها) -->
         <div id="sidebar" class="w-full md:w-1/3 lg:w-1/4 h-full border-l border-gray-200 flex flex-col bg-white z-10">
-            
-            <!-- Sidebar Header -->
-            <div class="p-4 bg-white border-b border-gray-100 flex justify-between items-center sticky top-0 z-20">
-                <div class="flex items-center cursor-pointer" onclick="openSettings()">
-                    <img id="header-avatar" src="" class="w-10 h-10 rounded-full object-cover border border-gray-200" alt="Avatar">
-                    <div class="mr-3">
-                        <h3 id="header-name" class="font-bold text-gray-800 text-sm">...</h3>
-                        <p class="text-xs text-gray-500">آنلاین</p>
-                    </div>
+            <!-- Header -->
+            <div class="p-3 px-4 bg-white flex justify-between items-center sticky top-0 z-20">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center"><i class="fas fa-paper-plane"></i></div>
+                    <div class="text-gray-800 font-bold text-lg">پیام‌رسان</div>
                 </div>
-                <button onclick="openSettings()" class="text-gray-400 hover:text-blue-500 transition">
-                    <i class="fas fa-cog text-xl"></i>
+                <button onclick="openSettings()" class="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-600 transition">
+                    <i class="fas fa-bars text-xl"></i>
                 </button>
             </div>
 
-            <!-- Search Bar -->
-            <div class="p-3 bg-white">
-                <div class="relative">
-                    <i class="fas fa-search absolute right-3 top-3 text-gray-400"></i>
-                    <input type="text" id="search-input" onkeyup="handleSearch()" placeholder="جستجو بر اساس آیدی..." class="w-full bg-gray-100 text-gray-700 rounded-full py-2 pr-10 pl-4 focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-100 transition text-sm">
+            <!-- Search -->
+            <div class="px-4 pb-3">
+                <div class="relative bg-gray-100 rounded-2xl overflow-hidden group focus-within:ring-2 focus-within:ring-blue-100 transition">
+                    <i class="fas fa-search absolute right-4 top-3 text-gray-400 text-sm"></i>
+                    <input type="text" id="search-input" onkeyup="handleSearch()" placeholder="جستجو در کاربران..." class="w-full bg-transparent py-2.5 pr-10 pl-4 text-sm focus:outline-none text-gray-700">
                 </div>
             </div>
 
-            <!-- Chat List -->
-            <div id="chat-list" class="flex-1 overflow-y-auto pb-20">
-                <!-- Public Group Item -->
-                <div onclick="openChat('global_public_group', 'گروه عمومی', '', true)" class="flex items-center p-3 hover:bg-gray-50 cursor-pointer transition border-b border-gray-50">
-                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-xl flex-shrink-0">
+            <!-- List -->
+            <div id="chat-list" class="flex-1 overflow-y-auto pb-20 space-y-1">
+                <!-- Pinned Group -->
+                <div onclick="openChat('global_public_group', 'گروه عمومی', '', true)" class="flex items-center p-3 mx-2 rounded-xl hover:bg-gray-50 cursor-pointer transition group">
+                    <div class="w-14 h-14 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-2xl shadow-sm shrink-0 group-hover:scale-105 transition">
                         <i class="fas fa-users"></i>
                     </div>
-                    <div class="mr-3 flex-1 min-w-0">
-                        <div class="flex justify-between items-baseline mb-1">
+                    <div class="mr-3 flex-1 overflow-hidden">
+                        <div class="flex justify-between items-center mb-1">
                             <h4 class="font-bold text-gray-800 truncate">گروه عمومی</h4>
                         </div>
-                        <p class="text-xs text-gray-500 truncate">چت همگانی با همه اعضا</p>
+                        <p class="text-xs text-gray-500 truncate">چت همگانی با تمام کاربران...</p>
                     </div>
                 </div>
                 
-                <div id="search-results" class="hidden bg-yellow-50"></div>
-                <div id="private-chats-container"></div>
+                <!-- Search Results -->
+                <div id="search-results" class="hidden bg-blue-50 border-y border-blue-100 mx-2 rounded-lg mb-2 overflow-hidden"></div>
+                
+                <!-- Recent Chats Container -->
+                <div id="recent-chats-list" class="mt-1">
+                    <!-- Chats will be injected here -->
+                    <div class="text-center text-xs text-gray-400 mt-10">در حال بارگذاری گفتگوها...</div>
+                </div>
             </div>
         </div>
 
-        <!-- Chat Area -->
-        <div id="chat-area" class="fixed inset-0 md:static w-full md:w-2/3 lg:w-3/4 h-full bg-[#f3f4f6] flex flex-col transform translate-x-full md:translate-x-0 transition-transform duration-300 z-30">
+        <!-- Chat Area (صفحه چت) -->
+        <div id="chat-area" class="fixed inset-0 md:static w-full md:w-2/3 lg:w-3/4 h-full chat-bg flex flex-col transform translate-x-full md:translate-x-0 transition-transform duration-300 z-30">
             
-            <!-- Empty State -->
-            <div id="empty-state" class="hidden md:flex w-full h-full flex-col items-center justify-center text-gray-400">
-                <div class="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mb-4 text-4xl">
-                    <i class="fas fa-paper-plane text-gray-400"></i>
+            <!-- Default Empty State -->
+            <div id="empty-state" class="hidden md:flex w-full h-full items-center justify-center flex-col text-white">
+                <div class="w-24 h-24 bg-black bg-opacity-20 rounded-full flex items-center justify-center mb-4 backdrop-blur-sm">
+                    <i class="fas fa-comments text-4xl opacity-80"></i>
                 </div>
-                <p>یک گفتگو را برای شروع انتخاب کنید</p>
+                <div class="bg-black bg-opacity-20 px-6 py-2 rounded-full text-sm backdrop-blur-sm">
+                    یک گفتگو را انتخاب کنید تا پیام‌ها نمایش داده شوند
+                </div>
             </div>
 
-            <!-- Active Chat Interface -->
-            <div id="active-chat-interface" class="flex flex-col h-full hidden">
+            <!-- Chat Interface -->
+            <div id="active-chat-interface" class="flex flex-col h-full hidden relative">
                 
                 <!-- Chat Header -->
-                <div class="bg-white p-3 border-b border-gray-200 flex items-center shadow-sm relative z-20">
-                    <button onclick="closeChat()" class="md:hidden ml-3 text-gray-500 p-2 hover:bg-gray-100 rounded-full">
-                        <i class="fas fa-arrow-right"></i>
-                    </button>
+                <div class="bg-white/95 backdrop-blur-md p-2 px-4 flex items-center shadow-sm z-20 cursor-pointer border-b border-gray-100" onclick="handleHeaderClick()">
+                    <button onclick="closeChat()" class="md:hidden ml-2 text-gray-500 hover:bg-gray-100 p-2 rounded-full w-10 h-10 flex items-center justify-center transition"><i class="fas fa-arrow-right"></i></button>
                     
-                    <!-- Chat Info (Clickable for Group Members) -->
-                    <div id="chat-header-info" class="flex items-center flex-1 cursor-pointer hover:opacity-80 transition" onclick="handleHeaderClick()">
-                        <div class="w-10 h-10 rounded-full bg-gray-300 overflow-hidden flex-shrink-0">
+                    <div class="flex items-center flex-1 min-w-0">
+                        <div class="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 border border-gray-100">
                             <img id="chat-header-img" src="" class="w-full h-full object-cover hidden">
-                            <div id="chat-header-icon" class="w-full h-full flex items-center justify-center bg-blue-500 text-white">
-                                <i class="fas fa-user"></i>
-                            </div>
+                            <div id="chat-header-icon" class="w-full h-full flex items-center justify-center bg-blue-500 text-white"><i class="fas fa-user"></i></div>
                         </div>
-                        <div class="mr-3">
-                            <h3 id="chat-header-title" class="font-bold text-gray-800">نام چت</h3>
-                            <p id="chat-header-status" class="text-xs text-blue-500">آنلاین</p>
+                        <div class="mr-3 flex-1 min-w-0">
+                            <h3 id="chat-header-title" class="font-bold text-gray-800 text-sm truncate">...</h3>
+                            <p id="chat-header-status" class="text-[11px] text-blue-500 truncate">...</p>
                         </div>
                     </div>
-
-                    <!-- Members Button (Only visible in group) -->
-                    <button id="group-members-btn" onclick="showGroupMembers()" class="hidden text-blue-500 hover:bg-blue-50 p-2 rounded-full mr-2" title="لیست اعضا">
-                        <i class="fas fa-users text-lg"></i>
-                    </button>
                 </div>
 
-                <!-- Messages Container -->
-                <div id="messages-container" class="flex-1 overflow-y-auto p-4 space-y-3 bg-[#e5e7eb] bg-opacity-50"></div>
+                <!-- Messages -->
+                <div id="messages-container" class="flex-1 overflow-y-auto p-4 space-y-2 relative"></div>
 
-                <!-- Input Area -->
-                <div class="bg-white p-3 md:p-4 border-t border-gray-200">
-                    <div class="flex items-end space-x-2 space-x-reverse bg-gray-100 rounded-2xl p-2">
-                        <button class="p-2 text-gray-400 hover:text-gray-600 rounded-full">
-                            <i class="fas fa-smile text-xl"></i>
-                        </button>
-                        <textarea id="message-input" rows="1" class="flex-1 bg-transparent border-none focus:ring-0 resize-none py-2 px-2 max-h-32 text-sm" placeholder="پیام خود را بنویسید..."></textarea>
-                        <button onclick="sendMessage()" class="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded-full shadow-md transition transform active:scale-95 w-10 h-10 flex items-center justify-center">
-                            <i class="fas fa-paper-plane text-sm"></i>
-                        </button>
+                <!-- Input -->
+                <div class="bg-white/95 backdrop-blur p-2 md:p-3 pb-safe">
+                    <div class="flex items-end bg-gray-100 rounded-2xl p-1 border border-gray-200 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition">
+                        <textarea id="message-input" rows="1" class="flex-1 bg-transparent border-none focus:ring-0 resize-none py-3 px-4 max-h-32 text-sm text-gray-800 placeholder-gray-400" placeholder="پیام خود را بنویسید..."></textarea>
+                        <button onclick="sendMessage()" class="p-3 mb-0.5 text-blue-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition transform active:scale-90"><i class="fas fa-paper-plane text-xl rtl:rotate-180"></i></button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Group Members Modal -->
-    <div id="members-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-end md:items-center justify-center">
-        <div class="bg-white w-full md:w-96 md:rounded-2xl rounded-t-2xl h-[80vh] md:h-[600px] overflow-hidden flex flex-col shadow-2xl animate-fade-in">
-            <div class="bg-gradient-to-l from-blue-500 to-blue-600 p-4 flex justify-between items-center text-white">
-                <h3 class="font-bold text-lg"><i class="fas fa-users ml-2"></i>اعضای گروه</h3>
-                <button onclick="document.getElementById('members-modal').classList.add('hidden')">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
+    <!-- Members Modal (برای لیست اعضا) -->
+    <div id="members-modal" class="fixed inset-0 bg-black bg-opacity-60 z-[60] hidden flex items-center justify-center backdrop-blur-sm p-4 animate-fade-in">
+        <div class="bg-white w-full max-w-sm rounded-2xl h-[70vh] flex flex-col shadow-2xl overflow-hidden animate-slide-up">
+            <div class="bg-white p-4 border-b flex justify-between items-center bg-gray-50">
+                <h3 class="font-bold text-gray-700">اعضای گروه</h3>
+                <button onclick="document.getElementById('members-modal').classList.add('hidden')" class="w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center transition"><i class="fas fa-times"></i></button>
             </div>
-            <div class="p-2 bg-blue-50 text-xs text-gray-600 text-center border-b border-blue-100">
-                برای ارسال پیام خصوصی روی کاربر کلیک کنید
-            </div>
-            <div id="members-list" class="flex-1 overflow-y-auto p-0">
-                <!-- Members injected here -->
-                <div class="flex justify-center mt-10"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div></div>
-            </div>
+            <div id="members-list" class="flex-1 overflow-y-auto p-2"></div>
         </div>
     </div>
 
     <!-- Settings Modal -->
-    <div id="settings-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-end md:items-center justify-center">
-        <div class="bg-white w-full md:w-96 md:rounded-2xl rounded-t-2xl h-[80vh] md:h-auto overflow-hidden flex flex-col shadow-2xl animate-fade-in">
-            <div class="bg-blue-500 p-4 flex justify-between items-center text-white">
-                <h3 class="font-bold text-lg">تنظیمات</h3>
-                <button onclick="document.getElementById('settings-modal').classList.add('hidden')">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
+    <div id="settings-modal" class="fixed inset-0 bg-black bg-opacity-60 z-[60] hidden flex items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-white w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl animate-scale-in">
+            <div class="bg-white p-4 border-b flex justify-between items-center">
+                <h3 class="font-bold">تنظیمات پروفایل</h3>
+                <button onclick="document.getElementById('settings-modal').classList.add('hidden')" class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center"><i class="fas fa-times"></i></button>
             </div>
-            
-            <div class="p-6 overflow-y-auto">
-                <div class="flex flex-col items-center mb-6">
-                    <div class="relative w-24 h-24 mb-3 cursor-pointer group" onclick="document.getElementById('settings-upload').click()">
-                        <img id="settings-avatar" src="" class="w-full h-full rounded-full object-cover border-4 border-white shadow-md">
-                        <div class="absolute inset-0 bg-black bg-opacity-40 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition">
-                            <i class="fas fa-camera"></i>
-                        </div>
-                    </div>
-                    <input type="file" id="settings-upload" class="hidden" accept="image/*" onchange="handleSettingsImage(this)">
+            <div class="p-6 flex flex-col items-center">
+                <div class="w-28 h-28 rounded-full bg-gray-200 mb-6 relative overflow-hidden group cursor-pointer shadow-lg" onclick="document.getElementById('set-upload').click()">
+                    <img id="set-avatar" src="" class="w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition duration-300"><i class="fas fa-camera text-2xl"></i></div>
                 </div>
-
-                <div class="space-y-4">
-                    <div>
-                        <label class="text-xs text-gray-500 uppercase font-bold">نام نمایشی</label>
-                        <input type="text" id="settings-name" class="w-full border-b border-gray-300 py-2 focus:border-blue-500 focus:outline-none bg-transparent">
-                    </div>
-                    <div>
-                        <label class="text-xs text-gray-500 uppercase font-bold">آیدی (Username)</label>
-                        <input type="text" id="settings-username" class="w-full border-b border-gray-300 py-2 focus:border-blue-500 focus:outline-none bg-transparent">
-                    </div>
+                <input type="file" id="set-upload" class="hidden" onchange="handleSetImage(this)">
+                
+                <div class="w-full mb-4">
+                    <label class="text-xs text-gray-500 mr-2 mb-1 block">نام نمایشی</label>
+                    <input id="set-name" class="w-full p-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-blue-500 outline-none text-center font-bold">
                 </div>
-
-                <button onclick="saveSettings()" class="w-full mt-8 bg-blue-500 text-white py-3 rounded-xl font-bold hover:bg-blue-600 transition shadow-lg">
-                    ذخیره تغییرات
-                </button>
+                
+                <button onclick="saveSettings()" class="bg-blue-600 text-white w-full py-3 rounded-xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 transition active:scale-95">ذخیره تغییرات</button>
             </div>
         </div>
     </div>
 
-    <!-- Firebase SDKs -->
+    <!-- Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, doc, setDoc, getDoc, getDocs, addDoc, query, where, onSnapshot, orderBy, limit, serverTimestamp, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- Configuration ---
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        // 🔥 CONFIG (اینجا کد Firebase خودت رو قرار بده)
+        const firebaseConfig = {
+            apiKey: "AIzaSyAs_HguZ_up86aWIuQohq8nJl57aoE67Vo",
+            authDomain: "hichat-597f0.firebaseapp.com",
+            projectId: "hichat-597f0",
+            storageBucket: "hichat-597f0.firebasestorage.app",
+            messagingSenderId: "42057542840",
+            appId: "1:42057542840:web:8f123beb76a1930fb5184d",
+            measurementId: "G-BJRG0Y9TPY"
+        };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
-        // --- State ---
-        let currentUser = null;
-        let userData = null;
-        let currentChatId = null;
-        let messageUnsubscribe = null;
-        let base64ProfileImage = '';
-        let isCurrentChatGroup = false;
+        // State
+        let currentUser = null, userData = null, currentChatId = null;
+        let unsubscribeMsg = null, unsubscribeChats = null, tempImg = null, isGroup = false;
 
-        // --- Paths ---
-        const getPublicCollection = (colName) => collection(db, 'artifacts', appId, 'public', 'data', colName);
-        const getPublicDoc = (colName, docId) => doc(db, 'artifacts', appId, 'public', 'data', colName, docId);
+        // 🔧 SIMPLE PATH (بدون artifacts)
+        const pubCol = (n) => collection(db, n);
+        const pubDoc = (n, id) => doc(db, n, id);
 
-        // --- Auth (No Loading Screen) ---
+        // --- 1. AUTH LOGIC ---
         const initAuth = async () => {
             try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (error) {
-                console.error("Auth Error:", error);
-                // If error, show auth screen as fallback
-                document.getElementById('auth-screen').classList.remove('hidden');
+                await signInAnonymously(auth);
+            } catch (e) {
+                console.error("Auth Fail", e);
+                showAuthScreen();
             }
         };
+        initAuth();
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
-                await checkUserProfile();
-            } else {
-                initAuth();
+                try {
+                    const snap = await getDoc(pubDoc('users', user.uid));
+                    if (snap.exists()) {
+                        userData = snap.data();
+                        showMainApp();
+                    } else {
+                        showAuthScreen();
+                    }
+                } catch (e) { showAuthScreen(); }
             }
         });
 
-        async function checkUserProfile() {
-            try {
-                const userDocRef = getPublicDoc('users', currentUser.uid);
-                const docSnap = await getDoc(userDocRef);
-
-                if (docSnap.exists()) {
-                    userData = docSnap.data();
-                    loadMainInterface();
-                } else {
-                    // New User -> Show Auth Screen
-                    document.getElementById('auth-screen').classList.remove('hidden');
-                    document.getElementById('auth-screen').classList.add('flex');
-                    document.getElementById('main-app').classList.add('hidden');
-                }
-            } catch (error) {
-                console.error("Profile check error:", error);
-            }
+        function showAuthScreen() {
+            document.getElementById('auth-screen').classList.remove('hidden');
+            document.getElementById('auth-screen').classList.add('flex');
+            document.getElementById('main-app').classList.add('hidden');
         }
 
-        // --- Main Interface ---
-        function loadMainInterface() {
+        function showMainApp() {
             document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('auth-screen').classList.remove('flex');
             document.getElementById('main-app').classList.remove('hidden');
-            
-            // Setup Header
-            document.getElementById('header-name').innerText = userData.name;
-            document.getElementById('header-avatar').src = userData.photoURL;
-            
-            // Settings Pre-fill
-            document.getElementById('settings-name').value = userData.name;
-            document.getElementById('settings-username').value = userData.username;
-            document.getElementById('settings-avatar').src = userData.photoURL;
+            document.getElementById('set-name').value = userData.name;
+            document.getElementById('set-avatar').src = userData.photoURL;
+            loadRecentChats();
         }
 
-        // --- Image Helpers ---
-        window.handleImagePreview = (input) => {
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const img = new Image();
-                    img.onload = function() {
-                        const canvas = document.createElement('canvas');
-                        const ctx = canvas.getContext('2d');
-                        const maxSize = 200; 
-                        let width = img.width;
-                        let height = img.height;
-                        if (width > height) {
-                            if (width > maxSize) { height *= maxSize / width; width = maxSize; }
-                        } else {
-                            if (height > maxSize) { width *= maxSize / height; height = maxSize; }
-                        }
-                        canvas.width = width;
-                        canvas.height = height;
-                        ctx.drawImage(img, 0, 0, width, height);
-                        base64ProfileImage = canvas.toDataURL('image/jpeg', 0.7);
-                        
-                        document.getElementById('auth-preview-img').src = base64ProfileImage;
-                        document.getElementById('auth-preview-img').classList.remove('hidden');
-                        document.getElementById('auth-preview-icon').classList.add('hidden');
-                    };
-                    img.src = e.target.result;
-                }
-                reader.readAsDataURL(input.files[0]);
-            }
-        };
+        // --- 2. SIGNUP ---
+        window.handleImagePreview = (input) => processImage(input, (res) => {
+            tempImg = res;
+            document.getElementById('auth-preview-img').src = res;
+            document.getElementById('auth-preview-img').classList.remove('hidden');
+            document.getElementById('auth-preview-icon').classList.add('hidden');
+        });
 
-        // --- Signup ---
         window.completeSignup = async () => {
             const name = document.getElementById('auth-name').value.trim();
             const username = document.getElementById('auth-username').value.trim().toLowerCase();
+            if(!name || !username) return alert('لطفا نام و آیدی را وارد کنید');
             
-            if (!name || !username) { alert("لطفا نام و آیدی را وارد کنید."); return; }
-            if (username.length < 4) { alert("آیدی باید حداقل ۴ کاراکتر باشد."); return; }
-
             const btn = document.querySelector('#auth-screen button');
-            btn.innerText = 'لطفا صبر کنید...';
+            const oldText = btn.innerText;
+            btn.innerText = 'درحال ساخت حساب...';
             btn.disabled = true;
-
-            try {
-                const q = query(getPublicCollection('users'), where('username', '==', username));
-                const querySnapshot = await getDocs(q);
-                if (!querySnapshot.empty) {
-                    alert("این آیدی قبلا گرفته شده است.");
-                    btn.innerText = 'ورود به برنامه';
-                    btn.disabled = false;
-                    return;
-                }
-
-                const photoURL = base64ProfileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff`;
-                const newUserData = {
-                    uid: currentUser.uid,
-                    name: name,
-                    username: username,
-                    photoURL: photoURL,
-                    createdAt: serverTimestamp(),
-                    bio: 'کاربر جدید تلگرام'
-                };
-
-                await setDoc(getPublicDoc('users', currentUser.uid), newUserData);
-                userData = newUserData;
-                loadMainInterface();
-
-            } catch (e) {
-                console.error(e);
-                alert("خطا در ثبت نام: " + e.message);
-                btn.innerText = 'ورود به برنامه';
-                btn.disabled = false;
-            }
-        };
-
-        // --- Search ---
-        let searchTimeout;
-        window.handleSearch = () => {
-            clearTimeout(searchTimeout);
-            const queryText = document.getElementById('search-input').value.trim().toLowerCase();
-            const resultsDiv = document.getElementById('search-results');
             
-            if (queryText.length === 0) {
-                resultsDiv.classList.add('hidden');
-                resultsDiv.innerHTML = '';
-                return;
-            }
+            try {
+                // Check Username
+                const q = query(pubCol('users'), where('username', '==', username));
+                const snap = await getDocs(q);
+                if (!snap.empty && snap.docs[0].id !== currentUser.uid) throw new Error('این آیدی قبلا گرفته شده است');
 
-            searchTimeout = setTimeout(async () => {
-                const q = query(getPublicCollection('users'), where('username', '>=', queryText), where('username', '<=', queryText + '\uf8ff'), limit(5));
-                const snapshot = await getDocs(q);
-                resultsDiv.innerHTML = '';
+                const photoURL = tempImg || `https://ui-avatars.com/api/?name=${name}&background=3b82f6&color=fff`;
+                const newUser = { uid: currentUser.uid, name, username, photoURL, createdAt: serverTimestamp(), bio: 'کاربر آنلاین' };
                 
-                if (snapshot.empty) {
-                    resultsDiv.innerHTML = '<div class="p-3 text-center text-gray-500 text-sm">کاربری یافت نشد</div>';
-                } else {
-                    snapshot.forEach(doc => {
-                        const user = doc.data();
-                        if (user.uid === currentUser.uid) return;
-                        renderUserItem(user, resultsDiv);
-                    });
-                }
-                resultsDiv.classList.remove('hidden');
-            }, 500);
+                await setDoc(pubDoc('users', currentUser.uid), newUser);
+                userData = newUser;
+                showMainApp();
+            } catch (e) { alert(e.message); btn.innerText = oldText; btn.disabled = false; }
         };
 
-        function renderUserItem(user, container) {
-            const el = document.createElement('div');
-            el.className = 'flex items-center p-3 hover:bg-gray-100 cursor-pointer border-b border-gray-100 transition';
-            el.innerHTML = `
-                <img src="${user.photoURL}" class="w-10 h-10 rounded-full object-cover ml-3">
-                <div>
-                    <h4 class="text-sm font-bold text-gray-800">${user.name}</h4>
-                    <p class="text-xs text-blue-500">@${user.username}</p>
-                </div>
-            `;
-            const chatId = [currentUser.uid, user.uid].sort().join('_');
-            el.onclick = () => {
-                openChat(chatId, user.name, user.photoURL, false);
-                // Clear search if open
-                const searchInput = document.getElementById('search-input');
-                if(searchInput) searchInput.value = '';
-                document.getElementById('search-results').classList.add('hidden');
-                document.getElementById('members-modal').classList.add('hidden'); // Close modal if open
-            };
-            container.appendChild(el);
+        // --- 3. RECENT CHATS (Sidebar) ---
+        function loadRecentChats() {
+            if(unsubscribeChats) unsubscribeChats();
+            const list = document.getElementById('recent-chats-list');
+            
+            const q = query(pubCol('chats'), where('participantIds', 'array-contains', currentUser.uid));
+            
+            unsubscribeChats = onSnapshot(q, (snap) => {
+                const chats = [];
+                snap.forEach(d => chats.push({id: d.id, ...d.data()}));
+                
+                // Sort by lastMessageTime descending (Newest first)
+                chats.sort((a, b) => {
+                    const ta = a.lastMessageTime?.seconds || 0;
+                    const tb = b.lastMessageTime?.seconds || 0;
+                    return tb - ta;
+                });
+
+                list.innerHTML = '';
+                if(chats.length === 0) {
+                    list.innerHTML = '<div class="text-center text-xs text-gray-400 mt-4">هنوز گفتگویی ندارید</div>';
+                }
+
+                chats.forEach(chat => {
+                    // Determine Other User Name/Photo
+                    let title = "گروه";
+                    let img = "";
+                    let isPV = chat.type === 'private';
+                    
+                    if (isPV) {
+                        const otherId = chat.participantIds.find(id => id !== currentUser.uid) || currentUser.uid;
+                        const otherData = chat.participantsData?.[otherId] || {name: 'کاربر', photo: ''};
+                        title = otherData.name;
+                        img = otherData.photo || `https://ui-avatars.com/api/?name=${title}&background=random`;
+                    } else {
+                        title = chat.title || "گروه";
+                        img = chat.photo || ""; 
+                    }
+
+                    // Time Formatting
+                    let timeStr = '';
+                    if(chat.lastMessageTime) {
+                        timeStr = new Date(chat.lastMessageTime.seconds * 1000).toLocaleTimeString('fa-IR', {hour:'2-digit', minute:'2-digit'});
+                    }
+
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center p-3 mx-2 rounded-xl hover:bg-gray-50 cursor-pointer transition group relative';
+                    div.onclick = () => openChat(chat.id, title, img, !isPV);
+                    
+                    div.innerHTML = `
+                        <div class="relative">
+                             <img src="${img}" class="w-14 h-14 rounded-full object-cover shadow-sm bg-gray-200">
+                             ${!isPV ? '<div class="absolute -bottom-1 -right-1 bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] border-2 border-white"><i class="fas fa-users"></i></div>' : ''}
+                        </div>
+                        <div class="mr-3 flex-1 overflow-hidden min-w-0">
+                            <div class="flex justify-between items-center mb-1">
+                                <h4 class="font-bold text-gray-800 text-sm truncate">${title}</h4>
+                                <span class="text-[10px] text-gray-400 shrink-0">${timeStr}</span>
+                            </div>
+                            <p class="text-xs text-gray-500 truncate h-4">${chat.lastMessage || '...'}</p>
+                        </div>
+                    `;
+                    list.appendChild(div);
+                });
+            }, (error) => {
+                console.error("Chat list error:", error);
+                list.innerHTML = '<div class="text-center text-xs text-red-400 mt-4">خطا در بارگذاری لیست</div>';
+            });
         }
 
-        // --- Chat Logic ---
-        window.openChat = (chatId, title, image, isGroup) => {
+        // --- 4. CHAT AREA ---
+        window.openChat = (chatId, title, img, group) => {
             currentChatId = chatId;
-            isCurrentChatGroup = isGroup;
+            isGroup = group;
             
             // Header UI
             document.getElementById('chat-header-title').innerText = title;
-            const imgEl = document.getElementById('chat-header-img');
-            const iconEl = document.getElementById('chat-header-icon');
-            const membersBtn = document.getElementById('group-members-btn');
-            const statusEl = document.getElementById('chat-header-status');
+            const sEl = document.getElementById('chat-header-status');
+            sEl.innerText = group ? 'برای مشاهده اعضا ضربه بزنید' : 'آنلاین';
             
-            if (isGroup) {
-                imgEl.classList.add('hidden');
-                iconEl.classList.remove('hidden');
-                iconEl.innerHTML = '<i class="fas fa-users"></i>';
-                statusEl.innerText = 'کلیک برای لیست اعضا';
-                membersBtn.classList.remove('hidden');
+            if(group) {
+                document.getElementById('chat-header-img').classList.add('hidden');
+                document.getElementById('chat-header-icon').classList.remove('hidden');
+                document.getElementById('chat-header-icon').innerHTML = '<i class="fas fa-users"></i>';
             } else {
-                if(image) {
-                    imgEl.src = image;
-                    imgEl.classList.remove('hidden');
-                    iconEl.classList.add('hidden');
-                } else {
-                    imgEl.classList.add('hidden');
-                    iconEl.classList.remove('hidden');
-                    iconEl.innerHTML = '<i class="fas fa-user"></i>';
-                }
-                statusEl.innerText = 'آنلاین';
-                membersBtn.classList.add('hidden');
+                document.getElementById('chat-header-img').src = img;
+                document.getElementById('chat-header-img').classList.remove('hidden');
+                document.getElementById('chat-header-icon').classList.add('hidden');
             }
 
-            // Navigation
+            // Slide In
             document.getElementById('chat-area').classList.remove('translate-x-full');
-            if (window.innerWidth < 768) {
-                document.getElementById('sidebar').classList.add('hidden');
-            }
             document.getElementById('empty-state').classList.add('hidden');
             document.getElementById('active-chat-interface').classList.remove('hidden');
             document.getElementById('active-chat-interface').classList.add('flex');
+            if(window.innerWidth < 768) document.getElementById('sidebar').classList.add('hidden');
 
-            loadMessages(chatId);
+            // Load Messages
+            if(unsubscribeMsg) unsubscribeMsg();
+            
+            const q = query(pubCol('messages'), where('chatId', '==', chatId));
+            
+            const c = document.getElementById('messages-container');
+            c.innerHTML = '<div class="text-center text-white text-xs mt-10 opacity-70 bg-black/20 rounded-full py-1 px-3 w-max mx-auto">در حال بارگذاری پیام‌ها...</div>';
+            
+            unsubscribeMsg = onSnapshot(q, (snap) => {
+                const msgs = [];
+                snap.forEach(d => msgs.push(d.data()));
+                // Sort locally
+                msgs.sort((a,b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0));
+
+                c.innerHTML = '';
+                if(msgs.length === 0) {
+                     c.innerHTML = '<div class="text-center bg-black bg-opacity-20 text-white rounded-full text-xs py-1 px-3 mx-auto w-max mt-10 backdrop-blur-sm">پیامی نیست. سلام کنید! 👋</div>';
+                     return; 
+                }
+                
+                let lastSenderId = null;
+
+                msgs.forEach(m => {
+                    const me = m.senderId === currentUser.uid;
+                    const sameSender = lastSenderId === m.senderId;
+                    lastSenderId = m.senderId;
+
+                    const div = document.createElement('div');
+                    div.className = `flex w-full ${me ? 'justify-end' : 'justify-start'} animate-fade-in`;
+                    
+                    const time = m.timestamp ? new Date(m.timestamp.seconds * 1000).toLocaleTimeString('fa-IR', {hour:'2-digit', minute:'2-digit'}) : '...';
+
+                    div.innerHTML = `
+                        <div class="message-bubble relative p-2 px-3 rounded-2xl text-sm mb-1 min-w-[80px] group 
+                        ${me ? 'bg-[#effdde] text-black rounded-br-sm' : 'bg-white text-black rounded-bl-sm'}">
+                            ${!me && group && !sameSender ? `<div class="text-[11px] text-blue-600 font-bold mb-0.5">${m.senderName}</div>` : ''}
+                            <div class="pb-1 leading-6 relative z-10" style="white-space: pre-wrap;">${m.text}</div>
+                            <div class="text-[9px] ${me ? 'text-green-700' : 'text-gray-400'} text-left -mt-1 opacity-70 flex justify-end items-center gap-1">
+                                ${time}
+                                ${me ? '<i class="fas fa-check"></i>' : ''}
+                            </div>
+                        </div>`;
+                    c.appendChild(div);
+                });
+                // Scroll to bottom
+                requestAnimationFrame(() => c.scrollTop = c.scrollHeight);
+            });
         };
 
         window.closeChat = () => {
             document.getElementById('chat-area').classList.add('translate-x-full');
             document.getElementById('sidebar').classList.remove('hidden');
             currentChatId = null;
-            if (messageUnsubscribe) messageUnsubscribe();
+            if(unsubscribeMsg) unsubscribeMsg();
         };
-
-        window.handleHeaderClick = () => {
-            if (isCurrentChatGroup) {
-                showGroupMembers();
-            }
-        };
-
-        // --- Messages ---
-        function loadMessages(chatId) {
-            const container = document.getElementById('messages-container');
-            container.innerHTML = '<div class="text-center text-gray-400 mt-4 text-xs">در حال دریافت...</div>';
-            if (messageUnsubscribe) messageUnsubscribe();
-
-            const q = query(getPublicCollection('messages'), where('chatId', '==', chatId), orderBy('timestamp', 'asc'), limit(100));
-
-            messageUnsubscribe = onSnapshot(q, (snapshot) => {
-                container.innerHTML = '';
-                if (snapshot.empty) {
-                    container.innerHTML = '<div class="text-center text-gray-400 mt-10 text-sm bg-gray-200 rounded-full py-1 px-4 mx-auto w-max">پیامی وجود ندارد. گفتگو را آغاز کنید!</div>';
-                    return;
-                }
-
-                snapshot.docs.forEach(doc => {
-                    const msg = doc.data();
-                    const isMe = msg.senderId === currentUser.uid;
-                    const time = msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleTimeString('fa-IR', {hour: '2-digit', minute:'2-digit'}) : '...';
-                    
-                    const div = document.createElement('div');
-                    div.className = `flex w-full mb-2 ${isMe ? 'justify-end' : 'justify-start'}`;
-                    div.innerHTML = `
-                        <div class="message-bubble relative max-w-[80%] md:max-w-[70%] min-w-[80px] px-3 py-2 rounded-2xl text-sm ${
-                            isMe ? 'bg-blue-500 text-white rounded-br-none' : 'bg-white text-gray-800 rounded-bl-none'
-                        }">
-                            ${!isMe ? `<div class="text-[10px] font-bold text-blue-500 mb-1 opacity-90">${msg.senderName}</div>` : ''}
-                            <div class="pb-3 text-[14px] leading-6 whitespace-pre-wrap">${msg.text}</div>
-                            <div class="absolute bottom-1 left-2 text-[10px] ${isMe ? 'text-blue-100' : 'text-gray-400'}">${time}</div>
-                        </div>
-                    `;
-                    container.appendChild(div);
-                });
-                container.scrollTop = container.scrollHeight;
-            }, (err) => console.log(err));
-        }
 
         window.sendMessage = async () => {
-            const input = document.getElementById('message-input');
-            const text = input.value.trim();
-            if (!text || !currentChatId) return;
-            input.value = '';
-            try {
-                await addDoc(getPublicCollection('messages'), {
-                    text: text, senderId: currentUser.uid, senderName: userData.name, chatId: currentChatId, timestamp: serverTimestamp()
-                });
-            } catch (error) { console.error("Error sending message:", error); }
-        };
-
-        document.getElementById('message-input').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-        });
-
-        // --- Group Members Logic ---
-        window.showGroupMembers = async () => {
-            const modal = document.getElementById('members-modal');
-            const list = document.getElementById('members-list');
-            modal.classList.remove('hidden');
-            list.innerHTML = '<div class="flex justify-center mt-10"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div></div>';
+            const i = document.getElementById('message-input');
+            const txt = i.value.trim();
+            if(!txt || !currentChatId) return;
+            i.value = '';
+            i.style.height = 'auto';
 
             try {
-                // Fetch ALL users (For this scale it's fine)
-                const q = query(getPublicCollection('users'), orderBy('createdAt', 'desc'));
-                const snapshot = await getDocs(q);
+                const ts = serverTimestamp();
                 
-                list.innerHTML = '';
-                if (snapshot.empty) {
-                    list.innerHTML = '<div class="text-center p-4 text-gray-500">عضوی یافت نشد</div>';
+                // 1. Add Message
+                await addDoc(pubCol('messages'), {
+                    text: txt, 
+                    senderId: currentUser.uid, 
+                    senderName: userData.name, 
+                    chatId: currentChatId, 
+                    timestamp: ts
+                });
+
+                // 2. Update Chat Metadata (for sidebar)
+                if(currentChatId !== 'global_public_group') {
+                    const ids = currentChatId.split('_');
+                    const chatRef = pubDoc('chats', currentChatId);
+                    
+                    const updateData = {
+                        lastMessage: txt,
+                        lastMessageTime: ts,
+                        participantIds: ids,
+                        type: 'private'
+                    };
+                    
+                    updateData[`participantsData.${currentUser.uid}`] = {
+                        name: userData.name,
+                        photo: userData.photoURL
+                    };
+
+                    await setDoc(chatRef, updateData, {merge: true});
                 }
 
-                snapshot.forEach(doc => {
-                    const user = doc.data();
-                    
-                    const div = document.createElement('div');
-                    div.className = 'flex items-center p-3 hover:bg-gray-100 cursor-pointer border-b border-gray-100 transition bg-white';
-                    
-                    // Style differently for current user
-                    const isMe = user.uid === currentUser.uid;
-                    const suffix = isMe ? ' (شما)' : '';
-                    
-                    div.innerHTML = `
-                        <div class="relative">
-                            <img src="${user.photoURL}" class="w-12 h-12 rounded-full object-cover ml-3 border border-gray-200">
-                            <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+            } catch(e) { console.error("Send Error", e); }
+        };
+
+        // --- 5. SEARCH & NEW CHAT (FIXED) ---
+        let st;
+        window.handleSearch = () => {
+            clearTimeout(st);
+            const v = document.getElementById('search-input').value.trim().toLowerCase();
+            const r = document.getElementById('search-results');
+            if(!v) { r.classList.add('hidden'); return; }
+            
+            st = setTimeout(async () => {
+                // همه کاربران رو بگیر و در جاوااسکریپت فیلتر کن
+                const snap = await getDocs(query(pubCol('users'), limit(50)));
+                r.innerHTML = '';
+                r.classList.remove('hidden');
+                
+                const users = [];
+                snap.forEach(d => {
+                    const u = d.data();
+                    if(u.uid === currentUser.uid) return;
+                    if(u.username.includes(v) || u.name.includes(v)) {
+                        users.push(u);
+                    }
+                });
+                
+                if(users.length === 0) {
+                     r.innerHTML = '<div class="p-3 text-center text-xs text-gray-500">کاربری یافت نشد</div>';
+                }
+
+                users.forEach(u => {
+                    const el = document.createElement('div');
+                    el.className = 'flex items-center p-3 hover:bg-blue-100 cursor-pointer border-b border-blue-100 last:border-0 transition';
+                    el.innerHTML = `
+                        <img src="${u.photoURL}" class="w-10 h-10 rounded-full ml-3 object-cover">
+                        <div>
+                            <div class="text-sm font-bold text-gray-800">${u.name}</div>
+                            <div class="text-xs text-gray-500">@${u.username}</div>
                         </div>
-                        <div class="flex-1">
-                            <h4 class="font-bold text-gray-800 text-sm">${user.name} <span class="text-xs text-gray-400">${suffix}</span></h4>
-                            <p class="text-xs text-blue-500">@${user.username}</p>
-                        </div>
-                        ${!isMe ? '<div class="text-gray-400"><i class="fas fa-comment-alt"></i></div>' : ''}
                     `;
-                    
-                    if (!isMe) {
-                        const chatId = [currentUser.uid, user.uid].sort().join('_');
-                        div.onclick = () => {
-                            modal.classList.add('hidden');
-                            openChat(chatId, user.name, user.photoURL, false);
+                    el.onclick = async () => {
+                        const chatId = [currentUser.uid, u.uid].sort().join('_');
+                        
+                        const chatRef = pubDoc('chats', chatId);
+                        await setDoc(chatRef, {
+                            participantIds: [currentUser.uid, u.uid],
+                            participantsData: {
+                                [currentUser.uid]: { name: userData.name, photo: userData.photoURL },
+                                [u.uid]: { name: u.name, photo: u.photoURL }
+                            },
+                            type: 'private',
+                            createdAt: serverTimestamp()
+                        }, {merge: true});
+
+                        openChat(chatId, u.name, u.photoURL, false);
+                        r.classList.add('hidden');
+                        document.getElementById('search-input').value = '';
+                    };
+                    r.appendChild(el);
+                });
+            }, 600);
+        };
+
+        // --- 6. MEMBERS & SETTINGS ---
+        window.handleHeaderClick = async () => {
+            if(!isGroup) return; 
+            const m = document.getElementById('members-modal');
+            const l = document.getElementById('members-list');
+            m.classList.remove('hidden');
+            l.innerHTML = '<div class="text-center mt-10 text-gray-400"><i class="fas fa-spinner fa-spin"></i></div>';
+            
+            try {
+                const snap = await getDocs(query(pubCol('users'), orderBy('createdAt', 'desc'), limit(50)));
+                l.innerHTML = '';
+                snap.forEach(d => {
+                    const u = d.data();
+                    const isMe = u.uid === currentUser.uid;
+                    const el = document.createElement('div');
+                    el.className = 'flex items-center p-2 hover:bg-gray-50 cursor-pointer rounded-xl mb-1 transition';
+                    el.innerHTML = `
+                        <img src="${u.photoURL}" class="w-10 h-10 rounded-full object-cover ml-3 border border-gray-100">
+                        <div class="flex-1">
+                            <div class="font-bold text-sm text-gray-800">${u.name} ${isMe ? '<span class="text-[10px] text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full mr-1">خودم</span>' : ''}</div>
+                            <div class="text-xs text-gray-400">@${u.username}</div>
+                        </div>
+                        <div class="text-gray-300"><i class="fas fa-comment-alt"></i></div>
+                    `;
+                    if(!isMe) {
+                        el.onclick = async () => {
+                            m.classList.add('hidden');
+                            const chatId = [currentUser.uid, u.uid].sort().join('_');
+                            await setDoc(pubDoc('chats', chatId), {
+                                participantIds: [currentUser.uid, u.uid],
+                                participantsData: {
+                                    [currentUser.uid]: { name: userData.name, photo: userData.photoURL },
+                                    [u.uid]: { name: u.name, photo: u.photoURL }
+                                },
+                                type: 'private'
+                            }, {merge: true});
+                            openChat(chatId, u.name, u.photoURL, false);
                         };
                     }
-                    
-                    list.appendChild(div);
+                    l.appendChild(el);
                 });
-            } catch (e) {
-                console.error(e);
-                list.innerHTML = '<div class="text-center p-4 text-red-500">خطا در دریافت لیست اعضا</div>';
-            }
+            } catch(e) { l.innerHTML = 'خطا در دریافت لیست'; }
         };
 
-        // --- Settings Logic ---
         window.openSettings = () => document.getElementById('settings-modal').classList.remove('hidden');
+        window.handleSetImage = (i) => processImage(i, (r) => { tempImg = r; document.getElementById('set-avatar').src = r; });
         
-        window.handleSettingsImage = (input) => {
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
+        window.saveSettings = async () => {
+            const n = document.getElementById('set-name').value;
+            if(!n) return;
+            const btn = document.querySelector('#settings-modal button');
+            btn.innerText = 'درحال ذخیره...';
+            await updateDoc(pubDoc('users', currentUser.uid), { name: n, photoURL: tempImg || userData.photoURL });
+            userData.name = n; if(tempImg) userData.photoURL = tempImg;
+            document.getElementById('settings-modal').classList.add('hidden');
+            btn.innerText = 'ذخیره تغییرات';
+            tempImg = null;
+        };
+
+        // Utils
+        function processImage(input, cb) {
+            if(input.files && input.files[0]) {
+                const fr = new FileReader();
+                fr.onload = (e) => {
                     const img = new Image();
-                    img.onload = function() {
-                         const canvas = document.createElement('canvas');
-                         const ctx = canvas.getContext('2d');
-                         const maxSize = 200;
-                         let w=img.width, h=img.height;
-                         if(w>h){ if(w>maxSize){h*=maxSize/w; w=maxSize;}}
-                         else{ if(h>maxSize){w*=maxSize/h; h=maxSize;}}
-                         canvas.width=w; canvas.height=h;
-                         ctx.drawImage(img,0,0,w,h);
-                         const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-                         document.getElementById('settings-avatar').src = dataUrl;
-                         userData.tempPhoto = dataUrl;
+                    img.onload = () => {
+                        const c = document.createElement('canvas');
+                        const ctx = c.getContext('2d');
+                        let w=img.width, h=img.height;
+                        if(w>h && w>200){h*=200/w;w=200;} else if(h>200){w*=200/h;h=200;}
+                        c.width=w; c.height=h;
+                        ctx.drawImage(img,0,0,w,h);
+                        cb(c.toDataURL('image/jpeg', 0.8));
                     }
                     img.src = e.target.result;
-                }
-                reader.readAsDataURL(input.files[0]);
+                };
+                fr.readAsDataURL(input.files[0]);
             }
-        };
-
-        window.saveSettings = async () => {
-            const newName = document.getElementById('settings-name').value.trim();
-            const newUsername = document.getElementById('settings-username').value.trim().toLowerCase();
-            const newPhoto = userData.tempPhoto || userData.photoURL;
-
-            if(!newName || !newUsername) { alert('نام و آیدی الزامی است'); return;}
-            
-            const btn = document.querySelector('#settings-modal button');
-            const oldText = btn.innerText;
-            btn.innerText = 'ذخیره...';
-            btn.disabled = true;
-
-            try {
-                const updates = { name: newName, username: newUsername, photoURL: newPhoto };
-                await updateDoc(getPublicDoc('users', currentUser.uid), updates);
-                userData = { ...userData, ...updates };
-                delete userData.tempPhoto;
-                document.getElementById('header-name').innerText = newName;
-                document.getElementById('header-avatar').src = newPhoto;
-                document.getElementById('settings-modal').classList.add('hidden');
-                alert('ذخیره شد');
-            } catch (error) { console.error(error); alert('خطا'); } 
-            finally { btn.innerText = oldText; btn.disabled = false; }
-        };
+        }
+        
+        // Auto-resize textarea
+        const tx = document.getElementById('message-input');
+        tx.addEventListener("input", function(){
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
 
     </script>
 </body>
-</html>
-
-
+    </html>
